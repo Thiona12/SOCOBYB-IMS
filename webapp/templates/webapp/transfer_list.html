@@ -1,0 +1,56 @@
+{% extends "webapp/base.html" %}
+{% block title %}Transferts{% endblock %}
+{% block content %}
+<h2 class="mb-4">Transferts</h2>
+<div class="row">
+  <div class="col-md-7">
+    <table class="table table-bordered bg-white">
+      <thead><tr><th>#</th><th>De</th><th>Vers</th><th>Statut</th><th></th></tr></thead>
+      <tbody>
+        {% for t in transfers %}
+        <tr>
+          <td>{{ t.id }}</td><td>{{ t.source_shop.name }}</td><td>{{ t.destination_shop.name }}</td>
+          <td>
+            <span class="badge badge-status
+              {% if t.status == 'COMPLETED' %}bg-success{% elif t.status == 'COMPLETED_WITH_DISCREPANCY' %}bg-warning text-dark{% elif t.status == 'PENDING' %}bg-secondary{% else %}bg-info{% endif %}">
+              {{ t.status }}
+            </span>
+          </td>
+          <td>{% if t.status == 'PENDING' or t.status == 'IN_TRANSIT' %}<a href="{% url 'transfer_verify' t.id %}" class="btn btn-sm btn-outline-dark">Vérifier</a>{% endif %}</td>
+        </tr>
+        {% empty %}<tr><td colspan="5" class="text-muted">Aucun transfert.</td></tr>{% endfor %}
+      </tbody>
+    </table>
+  </div>
+  <div class="col-md-5">
+    <div class="card p-3">
+      <h5>Nouveau transfert (produit en vrac)</h5>
+      <form method="post" action="{% url 'transfer_create' %}">
+        {% csrf_token %}
+        <div class="mb-2">
+          <label class="form-label">Boutique source</label>
+          <select name="source_shop" class="form-select" required>
+            {% for s in shops %}<option value="{{ s.id }}">{{ s.name }}</option>{% endfor %}
+          </select>
+        </div>
+        <div class="mb-2">
+          <label class="form-label">Boutique destination</label>
+          <select name="destination_shop" class="form-select" required>
+            {% for s in shops %}<option value="{{ s.id }}">{{ s.name }}</option>{% endfor %}
+          </select>
+        </div>
+        <div class="mb-2">
+          <label class="form-label">ID Produit</label>
+          <input type="number" name="product_id" class="form-control" required>
+        </div>
+        <div class="mb-2">
+          <label class="form-label">Quantité</label>
+          <input type="number" name="quantity" class="form-control" min="1" required>
+        </div>
+        <button class="btn btn-dark w-100">Créer le transfert</button>
+      </form>
+      <small class="text-muted mt-2">Note : pour transférer des produits IMEI-suivis, utilisez l'API directement (D-12 §9).</small>
+    </div>
+  </div>
+</div>
+{% endblock %}

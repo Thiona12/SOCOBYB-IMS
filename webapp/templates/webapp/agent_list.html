@@ -1,0 +1,41 @@
+{% extends "webapp/base.html" %}
+{% block title %}Agents{% endblock %}
+{% block content %}
+<h2 class="mb-4">Agents</h2>
+<div class="row">
+  <div class="col-md-7">
+    <table class="table table-bordered bg-white">
+      <thead><tr><th>Nom</th><th>Statut</th><th>Plafond</th><th>En cours</th><th></th></tr></thead>
+      <tbody>
+        {% for a in agents %}
+        <tr>
+          <td>{{ a.name }}</td>
+          <td><span class="badge {% if a.status == 'APPROVED' %}bg-success{% else %}bg-secondary{% endif %}">{{ a.status }}</span></td>
+          <td>{{ a.credit_limit }}</td>
+          <td>{{ a.assignment_set.all|length }}</td>
+          <td>
+            <form method="post" action="{% url 'agent_assign' a.id %}" class="d-flex gap-1">
+              {% csrf_token %}
+              <input type="text" name="stock_item_ids" class="form-control form-control-sm" placeholder="IDs stock (ex: 1)" style="width:140px">
+              <button class="btn btn-sm btn-outline-dark">Affecter</button>
+            </form>
+          </td>
+        </tr>
+        {% empty %}<tr><td colspan="5" class="text-muted">Aucun agent.</td></tr>{% endfor %}
+      </tbody>
+    </table>
+  </div>
+  <div class="col-md-5">
+    <div class="card p-3">
+      <h5>Nouvel agent</h5>
+      <form method="post" action="{% url 'agent_create' %}">
+        {% csrf_token %}
+        <div class="mb-2"><label class="form-label">Nom</label><input type="text" name="name" class="form-control" required></div>
+        <div class="mb-2"><label class="form-label">Téléphone</label><input type="text" name="phone" class="form-control" required></div>
+        <div class="mb-2"><label class="form-label">Plafond de crédit (nb. appareils)</label><input type="number" name="credit_limit" class="form-control" value="5" required></div>
+        <button class="btn btn-dark w-100">Créer</button>
+      </form>
+    </div>
+  </div>
+</div>
+{% endblock %}

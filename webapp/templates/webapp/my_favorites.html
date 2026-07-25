@@ -1,0 +1,15 @@
+{% extends "webapp/base.html" %}
+{% block title %}Mes favoris{% endblock %}
+{% block content %}
+<h2 class="mb-4">Mes favoris</h2>
+<div class="row g-3">
+  {% for f in favorites %}
+  <div class="col-md-4">
+    <div class="card p-3">
+      <h5>{{ f.product.name }}</h5>
+      <p class="fw-bold">{{ f.product.selling_price }} FCFA</p>
+    </div>
+  </div>
+  {% empty %}<p class="text-muted">Aucun favori pour le moment.</p>{% endfor %}
+</div>
+{% endblock %}

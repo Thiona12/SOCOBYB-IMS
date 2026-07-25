@@ -1,0 +1,54 @@
+{% extends "webapp/base.html" %}
+{% block title %}Inventaire{% endblock %}
+{% block content %}
+<h2 class="mb-4">Inventaire</h2>
+
+<form method="get" class="mb-3 d-flex gap-2 align-items-center">
+  <label class="me-2">Boutique :</label>
+  <select name="shop" class="form-select w-auto" onchange="this.form.submit()">
+    {% for shop in shops %}
+      <option value="{{ shop.id }}" {% if shop.id == selected_shop_id %}selected{% endif %}>{{ shop.name }}</option>
+    {% endfor %}
+  </select>
+</form>
+
+<div class="row">
+  <div class="col-md-7">
+    <table class="table table-bordered bg-white">
+      <thead><tr><th>Produit</th><th>Quantité</th><th>Seuil min.</th></tr></thead>
+      <tbody>
+        {% for inv in inventories %}
+        <tr class="{% if inv.quantity <= inv.minimum_level %}table-warning{% endif %}">
+          <td>{{ inv.product.name }}</td><td>{{ inv.quantity }}</td><td>{{ inv.minimum_level }}</td>
+        </tr>
+        {% empty %}
+        <tr><td colspan="3" class="text-muted">Aucun stock pour cette boutique.</td></tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+  <div class="col-md-5">
+    <div class="card p-3">
+      <h5>Réceptionner du stock</h5>
+      <form method="post" action="{% url 'inventory_receive' selected_shop_id %}">
+        {% csrf_token %}
+        <div class="mb-2">
+          <label class="form-label">Produit</label>
+          <select name="product_id" class="form-select" required>
+            {% for p in products %}<option value="{{ p.id }}">{{ p.name }}</option>{% endfor %}
+          </select>
+        </div>
+        <div class="mb-2">
+          <label class="form-label">Quantité</label>
+          <input type="number" name="quantity" class="form-control" min="1" required>
+        </div>
+        <div class="mb-2">
+          <label class="form-label">Identifiants IMEI (séparés par virgule, laisser vide si produit en vrac)</label>
+          <input type="text" name="identifiers" class="form-control" placeholder="IMEI111, IMEI222">
+        </div>
+        <button class="btn btn-dark w-100">Réceptionner</button>
+      </form>
+    </div>
+  </div>
+</div>
+{% endblock %}

@@ -63,3 +63,21 @@ All four of the trickiest business rules (IMEI discrepancy, credit limit, invent
 
 ### Fixed — bulk product transfers
 Transfers now correctly handle bulk (non-serialized) products via `bulkItems`: source `Inventory.quantity` is decremented (reserved) at creation time, and `POST /transfers/{id}/verify` accepts `receivedBulkItems` to credit the destination `Inventory` row (created if it doesn't exist yet) with whatever quantity actually arrived. Short/over deliveries are flagged as `COMPLETED_WITH_DISCREPANCY` with the shipped-vs-received numbers returned, same pattern as IMEI mismatches.
+
+## Update — Django templates frontend (webapp app)
+
+A full server-rendered frontend using Django's own template engine (no React) — since Bootstrap-styled HTML + Django views is a much smaller learning curve than a separate JS frontend.
+
+- **Auth**: `/login/`, `/register/`, `/logout/` — Django's built-in session auth (`django.contrib.auth`), reusing the exact same `User`/`Role` models as the DRF API. A user can log into either the API (JWT) or this web UI (session) with the same credentials.
+- **Staff**: `/` (dashboard), `/inventory/`, `/transfers/` (+ create/verify), `/sales/` (+ create), `/agents/` (+ create/assign)
+- **Customer**: `/catalogue/` (reserve/favorite buttons inline), `/my-reservations/`, `/my-favorites/`
+
+All the same business rules apply here as in the API (BR-TRF-002 discrepancy detection, BR-AGT-003 credit limit, BR-SALE-001 inventory reduction) — verified end-to-end via simulated browser sessions (register → login → receive stock → create transfer → verify → confirm destination inventory credited; customer register → reserve → favorite → confirm on "my" pages).
+
+### Known simplifications in the web UI (vs. the API)
+- Transfer creation via the web form only supports bulk (non-IMEI) products for simplicity; IMEI-tracked transfers still need the API directly.
+- Agent assignment takes stock item IDs as a comma-separated text field rather than a proper picker — fine for an internal tool, worth a nicer widget later.
+- `cancel_reservation` is a GET link, not a POST button — acceptable for an internal MVP but should become a POST-only action before any real deployment.
+
+### Running it
+Same setup as before (`pip install -r requirements.txt`, migrate, `runserver`) — the web UI and API now live on the same Django project, so one server serves both.

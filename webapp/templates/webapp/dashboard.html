@@ -1,0 +1,16 @@
+{% extends "webapp/base.html" %}
+{% block title %}Tableau de bord{% endblock %}
+{% block content %}
+<h2 class="mb-4">Tableau de bord</h2>
+<div class="row g-3">
+  <div class="col-md-3"><div class="card p-3 text-center"><h3>{{ shop_count }}</h3><small class="text-muted">Boutiques</small></div></div>
+  <div class="col-md-3"><div class="card p-3 text-center"><h3>{{ product_count }}</h3><small class="text-muted">Produits</small></div></div>
+  <div class="col-md-3"><div class="card p-3 text-center"><h3>{{ pending_requests }}</h3><small class="text-muted">Demandes en attente</small></div></div>
+  <div class="col-md-3"><div class="card p-3 text-center"><h3>{{ pending_transfers }}</h3><small class="text-muted">Transferts en cours</small></div></div>
+</div>
+<div class="row mt-4 g-3">
+  <div class="col-md-4"><a href="{% url 'inventory_list' %}" class="btn btn-outline-dark w-100 py-3">📦 Gérer l'inventaire</a></div>
+  <div class="col-md-4"><a href="{% url 'transfer_list' %}" class="btn btn-outline-dark w-100 py-3">🔄 Transferts</a></div>
+  <div class="col-md-4"><a href="{% url 'sale_list' %}" class="btn btn-outline-dark w-100 py-3">💰 Ventes</a></div>
+</div>
+{% endblock %}

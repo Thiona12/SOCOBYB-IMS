@@ -33,6 +33,7 @@ INSTALLED_APPS = [
     "stockops",
     "notifications",
     "ai_services",
+    "webapp",  # Django-templates frontend (session auth, server-rendered)
 ]
 
 MIDDLEWARE = [
@@ -51,7 +52,7 @@ ROOT_URLCONF = "config.urls"
 TEMPLATES = [
     {
         "BACKEND": "django.template.backends.django.DjangoTemplates",
-        "DIRS": [],
+        "DIRS": [BASE_DIR / "webapp" / "templates"],
         "APP_DIRS": True,
         "OPTIONS": {
             "context_processors": [
@@ -63,6 +64,10 @@ TEMPLATES = [
         },
     },
 ]
+
+LOGIN_URL = "login"
+LOGIN_REDIRECT_URL = "dashboard"
+LOGOUT_REDIRECT_URL = "login"
 
 WSGI_APPLICATION = "config.wsgi.application"
 

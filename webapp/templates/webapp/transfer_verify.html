@@ -1,0 +1,29 @@
+{% extends "webapp/base.html" %}
+{% block title %}Vérifier transfert #{{ transfer.id }}{% endblock %}
+{% block content %}
+<h2 class="mb-4">Vérifier transfert #{{ transfer.id }}</h2>
+<p>{{ transfer.source_shop.name }} → {{ transfer.destination_shop.name }}</p>
+
+<form method="post" class="card p-3">
+  {% csrf_token %}
+  <h5>Produits en vrac</h5>
+  {% for bd in transfer.bulk_details.all %}
+    <div class="mb-2 row">
+      <label class="col-sm-6 col-form-label">{{ bd.product.name }} — expédié : {{ bd.shipped_quantity }}</label>
+      <div class="col-sm-6">
+        <input type="number" name="received_{{ bd.id }}" class="form-control" value="{{ bd.shipped_quantity }}" min="0" required>
+      </div>
+    </div>
+  {% empty %}<p class="text-muted">Aucun produit en vrac dans ce transfert.</p>{% endfor %}
+
+  <h5 class="mt-3">Produits suivis (IMEI)</h5>
+  {% for d in transfer.details.all %}
+    <div class="form-check">
+      <input class="form-check-input" type="checkbox" name="received_identifiers" value="{{ d.stock_item.identifier }}" id="item{{ d.id }}" checked>
+      <label class="form-check-label" for="item{{ d.id }}">{{ d.stock_item.identifier }} ({{ d.stock_item.product.name }})</label>
+    </div>
+  {% empty %}<p class="text-muted">Aucun produit IMEI dans ce transfert.</p>{% endfor %}
+
+  <button class="btn btn-dark mt-3">Confirmer la réception</button>
+</form>
+{% endblock %}

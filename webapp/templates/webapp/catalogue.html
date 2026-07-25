@@ -1,0 +1,32 @@
+{% extends "webapp/base.html" %}
+{% block title %}Catalogue{% endblock %}
+{% block content %}
+<h2 class="mb-4">Catalogue SOCOBYS</h2>
+<div class="row g-3">
+  {% for p in products %}
+  <div class="col-md-4">
+    <div class="card p-3 h-100">
+      <h5>{{ p.name }}</h5>
+      <p class="text-muted small">{{ p.category.name }}</p>
+      <p>{{ p.description|default:"" }}</p>
+      <p class="fw-bold">{{ p.selling_price }} FCFA</p>
+      <form method="post" action="{% url 'reserve_product' p.id %}" class="d-flex gap-2 mb-2">
+        {% csrf_token %}
+        <select name="shop_id" class="form-select form-select-sm">
+          {% for s in shops %}<option value="{{ s.id }}">{{ s.name }}</option>{% endfor %}
+        </select>
+        <button class="btn btn-sm btn-dark">Réserver</button>
+      </form>
+      <form method="post" action="{% url 'toggle_favorite' p.id %}">
+        {% csrf_token %}
+        <button class="btn btn-sm w-100 {% if p.id in favorite_ids %}btn-danger{% else %}btn-outline-secondary{% endif %}">
+          {% if p.id in favorite_ids %}★ Retirer des favoris{% else %}☆ Ajouter aux favoris{% endif %}
+        </button>
+      </form>
+    </div>
+  </div>
+  {% empty %}
+  <p class="text-muted">Aucun produit disponible pour le moment.</p>
+  {% endfor %}
+</div>
+{% endblock %}

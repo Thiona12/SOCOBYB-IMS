@@ -1,0 +1,18 @@
+{% extends "webapp/base.html" %}
+{% block title %}Mes réservations{% endblock %}
+{% block content %}
+<h2 class="mb-4">Mes réservations</h2>
+<table class="table table-bordered bg-white">
+  <thead><tr><th>Produit</th><th>Boutique</th><th>Statut</th><th>Date</th><th></th></tr></thead>
+  <tbody>
+    {% for r in reservations %}
+    <tr>
+      <td>{{ r.product.name }}</td><td>{{ r.shop.name }}</td>
+      <td><span class="badge {% if r.status == 'CONVERTED' %}bg-success{% elif r.status == 'CANCELLED' %}bg-secondary{% else %}bg-info{% endif %}">{{ r.status }}</span></td>
+      <td>{{ r.created_date|date:"d/m/Y" }}</td>
+      <td>{% if r.status == 'PENDING' %}<a href="{% url 'cancel_reservation' r.id %}" class="btn btn-sm btn-outline-danger">Annuler</a>{% endif %}</td>
+    </tr>
+    {% empty %}<tr><td colspan="5" class="text-muted">Aucune réservation.</td></tr>{% endfor %}
+  </tbody>
+</table>
+{% endblock %}

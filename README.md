@@ -81,3 +81,30 @@ All the same business rules apply here as in the API (BR-TRF-002 discrepancy det
 
 ### Running it
 Same setup as before (`pip install -r requirements.txt`, migrate, `runserver`) — the web UI and API now live on the same Django project, so one server serves both.
+
+## Update — formal test suite
+
+43 tests across `accounts`, `catalog`, `inventory`, `stockops`, `agents`, `sales`, and `webapp` — this replaces "I ran curl by hand" with a real, repeatable suite. **86% code coverage** on the business logic.
+
+Every business rule tested manually earlier in development is now a permanent, automated test:
+- **D-08 hybrid permissions**: role-granted vs. direct-granted permissions, including the exact bug scenario that was found and fixed (a permission granted directly with no supporting role)
+- **D-06 §9 catalogue privacy**: Customer role never receives `buying_price`; staff do
+- **BR-TRF-002**: IMEI mismatch detection (tracked items) AND short/over-delivery detection (bulk items) — both the "everything matches" and "something's wrong" paths
+- **BR-AGT-003**: credit limit rejection, including the case where *existing* outstanding devices plus a new request together exceed the limit
+- **BR-SALE-001/002**: inventory reduction on sale, insufficient-stock rejection, reservation-to-sale conversion
+- **BR-INV-002/004**: tracked vs. bulk reception, movement logging, identifier/quantity mismatch rejection
+- Web UI: registration → correct redirect by role, anonymous access correctly blocked, the `cancel_reservation` GET-vs-POST fix specifically verified
+
+### Running the tests
+```bash
+export DJANGO_SECRET_KEY=test-key DB_ENGINE=sqlite   # or your real .env
+python manage.py test
+
+# with coverage:
+pip install coverage
+coverage run --source='accounts,catalog,inventory,sales,agents,stockops,notifications,webapp' manage.py test
+coverage report
+```
+
+### What's not covered yet
+Shops/Categories CRUD, notifications, and reporting endpoints are simple enough that they weren't prioritized for tests — the coverage gaps are mostly there, plus some webapp view edge cases (currently 54% on `webapp/views.py`). Worth filling in before this goes into any kind of production use.

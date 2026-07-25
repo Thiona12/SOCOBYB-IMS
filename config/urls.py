@@ -1,56 +1,84 @@
 """
 config/urls.py — main URL routing, mirrors D-12's route groups.
-Auth, users/me, and products are fully implemented (accounts/, catalog/).
-Everything else is a permission-gated stub — see config/stub_views.py.
+All routes are now fully implemented (see README for what changed since the
+stub-scaffold version).
 """
 from django.contrib import admin
 from django.urls import path, include
 from django.http import JsonResponse
-from .stub_views import make_stub
+
+from accounts.shop_views import ShopListCreateView, ShopDetailView
+from catalog.category_views import CategoryListCreateView
+from inventory.views import ShopInventoryView, ReceiveInventoryView, StockItemMovementsView
+from stockops.views import (
+    StockRequestListCreateView, StockRequestApproveView, StockRequestRejectView,
+    TransferCreateView, TransferShipView, TransferVerifyView, TransferDetailView,
+)
+from sales.views import (
+    SaleListCreateView, SaleDetailView, ReservationCreateView, MyReservationsView,
+    ReservationCancelView, FavoriteCreateView, MyFavoritesView, FavoriteDeleteView,
+)
+from agents.views import AgentListCreateView, AgentApproveView, AgentAssignmentsView, AssignmentDetailPayView
+from notifications.views import MyNotificationsView, NotificationReadView
+from reports.views import InventoryReportView, SalesReportView, TransfersReportView, AgentsOutstandingReportView
 
 api_v1 = [
-    # ---- Fully implemented ----
+    # ---- Auth & Users ----
     path("", include("accounts.urls")),
+
+    # ---- Products (catalog) ----
     path("", include("catalog.urls")),
 
     # ---- Shops (UC-03) ----
-    path("shops", make_stub("USER_CREATE", "Implement Shop list/create — see D-12 §4."), name="shops"),
+    path("shops", ShopListCreateView.as_view(), name="shops"),
+    path("shops/<int:shop_id>", ShopDetailView.as_view(), name="shop-detail"),
 
     # ---- Categories (UC-04) ----
-    path("categories", make_stub("PRODUCT_CREATE", "Implement Category list/create — see D-12 §6."), name="categories"),
+    path("categories", CategoryListCreateView.as_view(), name="categories"),
 
     # ---- Inventory (UC-05) ----
-    path("shops/<int:shop_id>/inventory", make_stub("STOCK_VIEW", "Implement inventory view/receive — D-12 §7."), name="inventory"),
-    path("shops/<int:shop_id>/inventory/receive", make_stub("STOCK_ADJUST", "BR-INV-004: log a StockMovement on every reception."), name="inventory-receive"),
+    path("shops/<int:shop_id>/inventory", ShopInventoryView.as_view(), name="inventory"),
+    path("shops/<int:shop_id>/inventory/receive", ReceiveInventoryView.as_view(), name="inventory-receive"),
+    path("stock-items/<int:stock_item_id>/movements", StockItemMovementsView.as_view(), name="stock-item-movements"),
 
     # ---- Stock Requests (UC-06) ----
-    path("stock-requests", make_stub("STOCK_VIEW", "BR-REQ-001/002 — D-12 §8."), name="stock-requests"),
-    path("stock-requests/<int:request_id>/approve", make_stub("TRANSFER_APPROVE", "BR-REQ-002."), name="stock-request-approve"),
+    path("stock-requests", StockRequestListCreateView.as_view(), name="stock-requests"),
+    path("stock-requests/<int:request_id>/approve", StockRequestApproveView.as_view(), name="stock-request-approve"),
+    path("stock-requests/<int:request_id>/reject", StockRequestRejectView.as_view(), name="stock-request-reject"),
 
     # ---- Transfers (UC-07) ----
-    path("transfers", make_stub("TRANSFER_CREATE", "BR-TRF-001 — D-12 §9."), name="transfers"),
-    path("transfers/<int:transfer_id>/verify", make_stub("TRANSFER_APPROVE", "BR-TRF-002: compare received identifiers, set COMPLETED_WITH_DISCREPANCY on mismatch."), name="transfer-verify"),
+    path("transfers", TransferCreateView.as_view(), name="transfers"),
+    path("transfers/<int:transfer_id>", TransferDetailView.as_view(), name="transfer-detail"),
+    path("transfers/<int:transfer_id>/ship", TransferShipView.as_view(), name="transfer-ship"),
+    path("transfers/<int:transfer_id>/verify", TransferVerifyView.as_view(), name="transfer-verify"),
 
     # ---- Sales (UC-08) ----
-    path("sales", make_stub(None, "BR-SALE-001/002 — D-12 §10. Permission resolved per-method in the real controller (STOCK_VIEW to create, REPORT_VIEW/VIEW_OWN_HISTORY to read)."), name="sales"),
+    path("sales", SaleListCreateView.as_view(), name="sales"),
+    path("sales/<int:sale_id>", SaleDetailView.as_view(), name="sale-detail"),
 
     # ---- Reservations & Favorites (UC-09, UC-14) ----
-    path("reservations", make_stub("RESERVATION_CREATE", "BR-RES-001/002/003 — D-12 §11."), name="reservations"),
-    path("products/<int:product_id>/notify-me", make_stub("RESERVATION_CREATE", "BR-RES-002 Notify Me alert."), name="notify-me"),
-    path("favorites", make_stub("FAVORITE_CREATE", "D-12 §11."), name="favorites"),
+    path("reservations", ReservationCreateView.as_view(), name="reservations"),
+    path("reservations/me", MyReservationsView.as_view(), name="reservations-me"),
+    path("reservations/<int:reservation_id>/cancel", ReservationCancelView.as_view(), name="reservation-cancel"),
+    path("favorites", FavoriteCreateView.as_view(), name="favorites"),
+    path("favorites/me", MyFavoritesView.as_view(), name="favorites-me"),
+    path("favorites/<int:favorite_id>", FavoriteDeleteView.as_view(), name="favorite-delete"),
 
     # ---- Agents (UC-10) ----
-    path("agents", make_stub("AGENT_APPROVE", "D-12 §12."), name="agents"),
-    path("agents/<int:agent_id>/assignments", make_stub("AGENT_APPROVE", "BR-AGT-003: check creditLimit - outstanding >= len(stockItemIds) before creating."), name="agent-assignments"),
-    path("assignment-details/<int:detail_id>/pay", make_stub("AGENT_APPROVE", "BR-AGT-004: ASSIGNED -> SOLD."), name="assignment-pay"),
+    path("agents", AgentListCreateView.as_view(), name="agents"),
+    path("agents/<int:agent_id>/approve", AgentApproveView.as_view(), name="agent-approve"),
+    path("agents/<int:agent_id>/assignments", AgentAssignmentsView.as_view(), name="agent-assignments"),
+    path("assignment-details/<int:detail_id>/pay", AssignmentDetailPayView.as_view(), name="assignment-pay"),
 
     # ---- Notifications (UC-11) ----
-    path("notifications/me", make_stub(None, "D-12 §13."), name="notifications-me"),
+    path("notifications/me", MyNotificationsView.as_view(), name="notifications-me"),
+    path("notifications/<int:notification_id>/read", NotificationReadView.as_view(), name="notification-read"),
 
     # ---- Reporting (UC-12) ----
-    path("reports/inventory", make_stub("REPORT_VIEW", "D-12 §14."), name="report-inventory"),
-    path("reports/sales", make_stub("REPORT_VIEW", "D-12 §14."), name="report-sales"),
-    path("reports/agents/outstanding", make_stub("REPORT_VIEW", "D-12 §14."), name="report-agents-outstanding"),
+    path("reports/inventory", InventoryReportView.as_view(), name="report-inventory"),
+    path("reports/sales", SalesReportView.as_view(), name="report-sales"),
+    path("reports/transfers", TransfersReportView.as_view(), name="report-transfers"),
+    path("reports/agents/outstanding", AgentsOutstandingReportView.as_view(), name="report-agents-outstanding"),
 ]
 
 urlpatterns = [

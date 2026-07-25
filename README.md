@@ -46,3 +46,20 @@ For local development without MySQL, set `DB_ENGINE=sqlite` in `.env` — it'll 
 
 ## Note on the earlier Express scaffold
 This Django scaffold replaces the earlier Node.js/Express one (D-01's original stack). The database schema (D-11) and API design (D-12) are unchanged — only the backend implementation language/framework changed. If you want to keep both around for comparison, they're separate deliverables.
+
+## Update — services implemented (post-scaffold)
+
+Every stub from the previous version is now real, tested logic:
+- Shops, Categories — CRUD
+- Inventory — reception (creates StockItems for tracked products, logs StockMovement per BR-INV-004)
+- Stock Requests & Transfers — BR-TRF-001 (direct or request-based creation), **BR-TRF-002 IMEI verification with discrepancy detection**
+- Sales — BR-SALE-001 (auto-reduces inventory), BR-SALE-002 (converts matching pending reservations)
+- Reservations & Favorites — BR-RES-001/003
+- Agents & Assignments — **BR-AGT-002/003 credit-limit enforcement**, BR-AGT-004 payment status transition
+- Notifications — mark-as-read
+- Reporting — inventory low-stock, sales aggregates, transfer status breakdown, agent outstanding balances
+
+All four of the trickiest business rules (IMEI discrepancy, credit limit, inventory reduction, reception) were verified against a live test server, not just written — see commit history for the exact test sequence.
+
+### Known simplification to revisit
+`TransferVerifyView` doesn't yet move `Inventory` row quantities between source/destination shops — it updates `StockItem.status` and `TransferDetail.verification_status` correctly, but the `Inventory.quantity` counters for bulk (non-serialized) products during a transfer aren't adjusted yet. Fine for tracked (IMEI) products since those live on `StockItem` directly; needs finishing for bulk-product transfers.

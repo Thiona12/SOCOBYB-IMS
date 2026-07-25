@@ -1,16 +1,42 @@
 {% extends "webapp/base.html" %}
 {% block title %}Tableau de bord{% endblock %}
 {% block content %}
-<h2 class="mb-4">Tableau de bord</h2>
-<div class="row g-3">
-  <div class="col-md-3"><div class="card p-3 text-center"><h3>{{ shop_count }}</h3><small class="text-muted">Boutiques</small></div></div>
-  <div class="col-md-3"><div class="card p-3 text-center"><h3>{{ product_count }}</h3><small class="text-muted">Produits</small></div></div>
-  <div class="col-md-3"><div class="card p-3 text-center"><h3>{{ pending_requests }}</h3><small class="text-muted">Demandes en attente</small></div></div>
-  <div class="col-md-3"><div class="card p-3 text-center"><h3>{{ pending_transfers }}</h3><small class="text-muted">Transferts en cours</small></div></div>
+<h2 class="section-title">Tableau de bord</h2>
+<div class="row g-3 mb-4">
+  <div class="col-6 col-md-3"><div class="stat-card"><h3>{{ shop_count }}</h3><small>Boutiques</small></div></div>
+  <div class="col-6 col-md-3"><div class="stat-card"><h3>{{ product_count }}</h3><small>Produits</small></div></div>
+  <div class="col-6 col-md-3"><div class="stat-card"><h3>{{ pending_requests }}</h3><small>Demandes en attente</small></div></div>
+  <div class="col-6 col-md-3"><div class="stat-card"><h3>{{ pending_transfers }}</h3><small>Transferts en cours</small></div></div>
 </div>
-<div class="row mt-4 g-3">
-  <div class="col-md-4"><a href="{% url 'inventory_list' %}" class="btn btn-outline-dark w-100 py-3">📦 Gérer l'inventaire</a></div>
-  <div class="col-md-4"><a href="{% url 'transfer_list' %}" class="btn btn-outline-dark w-100 py-3">🔄 Transferts</a></div>
-  <div class="col-md-4"><a href="{% url 'sale_list' %}" class="btn btn-outline-dark w-100 py-3">💰 Ventes</a></div>
+
+<h5 class="fw-bold mb-3">Accès rapide</h5>
+<div class="row g-3">
+  <div class="col-md-4">
+    <a href="{% url 'inventory_list' %}" class="text-decoration-none">
+      <div class="card p-4 card-mtn-accent h-100">
+        <div class="fs-2 mb-2">📦</div>
+        <h5 class="fw-bold text-dark mb-1">Inventaire</h5>
+        <p class="text-muted small mb-0">Consulter et réceptionner le stock par boutique</p>
+      </div>
+    </a>
+  </div>
+  <div class="col-md-4">
+    <a href="{% url 'transfer_list' %}" class="text-decoration-none">
+      <div class="card p-4 card-mtn-accent h-100">
+        <div class="fs-2 mb-2">🔄</div>
+        <h5 class="fw-bold text-dark mb-1">Transferts</h5>
+        <p class="text-muted small mb-0">Créer et vérifier les transferts entre boutiques</p>
+      </div>
+    </a>
+  </div>
+  <div class="col-md-4">
+    <a href="{% url 'sale_list' %}" class="text-decoration-none">
+      <div class="card p-4 card-mtn-accent h-100">
+        <div class="fs-2 mb-2">💰</div>
+        <h5 class="fw-bold text-dark mb-1">Ventes</h5>
+        <p class="text-muted small mb-0">Enregistrer une vente et consulter l'historique</p>
+      </div>
+    </a>
+  </div>
 </div>
 {% endblock %}

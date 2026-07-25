@@ -35,14 +35,14 @@ Every other D-12 route exists in `config/urls.py` with the **correct path and pe
 
 ## Setup
 ```bash
-cp .env.example .env      # fill in DB credentials + secret key
+cp .env.example .env      # SQLite by default, no DB server needed
 pip install -r requirements.txt
 python manage.py migrate
 python manage.py createsuperuser   # optional, for /admin/
 python manage.py runserver
 ```
 
-For local development without MySQL, set `DB_ENGINE=sqlite` in `.env` — it'll use a local `db.sqlite3` file instead.
+**Database: SQLite by default.** No separate database server to install or run — Django creates and manages a local `db.sqlite3` file automatically via `migrate`. This matches D-11's schema exactly (same tables, same relationships), just without needing MySQL running. If SOCOBYS later needs multi-server production deployment, set `DB_ENGINE=mysql` in `.env` and use `db/schema.sql` — but for a solo internship project, SQLite is the simpler and recommended choice.
 
 ## Note on the earlier Express scaffold
 This Django scaffold replaces the earlier Node.js/Express one (D-01's original stack). The database schema (D-11) and API design (D-12) are unchanged — only the backend implementation language/framework changed. If you want to keep both around for comparison, they're separate deliverables.
@@ -108,3 +108,20 @@ coverage report
 
 ### What's not covered yet
 Shops/Categories CRUD, notifications, and reporting endpoints are simple enough that they weren't prioritized for tests — the coverage gaps are mostly there, plus some webapp view edge cases (currently 54% on `webapp/views.py`). Worth filling in before this goes into any kind of production use.
+
+## Update — SQLite by default, MTN-inspired design system
+
+**Database:** switched default from MySQL to SQLite (`DB_ENGINE=sqlite` in `.env.example`). No database server to install or run — `python manage.py migrate` creates `db.sqlite3` automatically. MySQL is still supported (`DB_ENGINE=mysql` + `db/schema.sql`) if SOCOBYS ever needs multi-server production deployment, but for a solo internship project SQLite is simpler and is now the default.
+
+**Design:** the webapp frontend now has an actual design system (`webapp/static/webapp/css/theme.css`) inspired by MTN's real brand identity — vivid yellow (`#FFCC00`) + black, chosen deliberately (per MTN's own published brand rationale) for trust, energy, and high contrast/accessibility. SOCOBYS is an MTN partner agency, so this ties the system visually to that ecosystem without using MTN's actual logo or trademarked assets.
+
+What changed:
+- Custom CSS variables, Inter font (Google Fonts), consistent border-radius/shadow language
+- Navbar: black background, yellow "SOCOBYS" badge, active-link highlighting
+- Split-screen login/register pages (yellow brand panel + white form panel)
+- Dashboard: stat cards with yellow top-accent, icon-based quick-access cards
+- Catalogue: proper product cards with category tag, yellow price badge
+- Consistent `.btn-mtn` (yellow), `.btn-mtn-dark` (black), `.btn-mtn-outline` button system across every page
+- Dark-themed table headers with yellow row-hover highlight
+
+Uses Bootstrap 5 (CDN) as the layout/grid foundation, with the custom theme layered on top — no build tooling, still just HTML + CSS.

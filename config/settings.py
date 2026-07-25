@@ -71,8 +71,11 @@ LOGOUT_REDIRECT_URL = "login"
 
 WSGI_APPLICATION = "config.wsgi.application"
 
-# ---- Database (D-11 schema, MySQL in production; sqlite fallback for local dev/tests) ----
-if os.environ.get("DB_ENGINE", "mysql") == "mysql":
+# ---- Database (D-11 schema) ----
+# SQLite is the default — no separate DB server to install/run, ideal for a
+# solo internship project. MySQL remains available by setting DB_ENGINE=mysql
+# if SOCOBYS ever needs multi-server / production-grade concurrent access.
+if os.environ.get("DB_ENGINE", "sqlite") == "mysql":
     DATABASES = {
         "default": {
             "ENGINE": "django.db.backends.mysql",
@@ -102,6 +105,7 @@ USE_I18N = True
 USE_TZ = True
 
 STATIC_URL = "static/"
+STATIC_ROOT = BASE_DIR / "staticfiles"
 DEFAULT_AUTO_FIELD = "django.db.models.BigAutoField"
 
 CORS_ALLOW_ALL_ORIGINS = DEBUG

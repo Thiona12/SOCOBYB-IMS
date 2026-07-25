@@ -1,0 +1,228 @@
+/* ==========================================================================
+   SOCOBYS IMS — design system
+   Inspired by MTN's visual identity (vivid yellow #FFCC00 + black), since
+   SOCOBYS operates as an MTN Cameroun partner agency. Not MTN's logo or
+   trademarked assets — just the same disciplined yellow/black/white palette
+   and clean, high-contrast, confident layout language telecom UIs use.
+   ========================================================================== */
+
+:root {
+  --mtn-yellow: #FFCC00;
+  --mtn-yellow-dark: #E6B800;
+  --mtn-black: #101010;
+  --mtn-charcoal: #1C1C1C;
+  --mtn-gray-100: #F7F7F8;
+  --mtn-gray-200: #ECECEE;
+  --mtn-gray-400: #A9A9AD;
+  --mtn-gray-600: #6B6B70;
+  --mtn-success: #1B8A5A;
+  --mtn-danger: #D6293E;
+  --mtn-warning: #E8A400;
+  --mtn-radius: 14px;
+  --mtn-shadow: 0 2px 10px rgba(16,16,16,0.06);
+  --mtn-shadow-lg: 0 8px 24px rgba(16,16,16,0.10);
+}
+
+body {
+  background-color: var(--mtn-gray-100);
+  font-family: 'Inter', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+  color: var(--mtn-black);
+}
+
+/* ---- Navbar ---- */
+.navbar-mtn {
+  background-color: var(--mtn-black) !important;
+  box-shadow: 0 2px 12px rgba(0,0,0,0.25);
+  padding-top: 0.65rem;
+  padding-bottom: 0.65rem;
+}
+.navbar-mtn .navbar-brand {
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
+  font-weight: 800;
+  font-size: 1.15rem;
+  color: #fff !important;
+}
+.navbar-mtn .brand-badge {
+  background: var(--mtn-yellow);
+  color: var(--mtn-black);
+  font-weight: 800;
+  font-size: 0.95rem;
+  padding: 0.15rem 0.5rem;
+  border-radius: 6px;
+  letter-spacing: 0.5px;
+}
+.navbar-mtn .brand-sub {
+  font-size: 0.68rem;
+  color: var(--mtn-gray-400);
+  font-weight: 500;
+  letter-spacing: 0.5px;
+  margin-top: -2px;
+}
+.navbar-mtn .nav-link {
+  color: rgba(255,255,255,0.8) !important;
+  font-weight: 500;
+  font-size: 0.92rem;
+  padding: 0.5rem 0.9rem !important;
+  border-radius: 8px;
+  transition: all 0.15s ease;
+}
+.navbar-mtn .nav-link:hover {
+  color: var(--mtn-black) !important;
+  background-color: var(--mtn-yellow);
+}
+.navbar-mtn .nav-link.active {
+  color: var(--mtn-black) !important;
+  background-color: var(--mtn-yellow);
+  font-weight: 700;
+}
+.navbar-mtn .navbar-text {
+  color: rgba(255,255,255,0.7) !important;
+  font-size: 0.88rem;
+}
+
+/* ---- Buttons ---- */
+.btn-mtn {
+  background-color: var(--mtn-yellow);
+  border: none;
+  color: var(--mtn-black);
+  font-weight: 700;
+  border-radius: 10px;
+  padding: 0.55rem 1.25rem;
+  transition: background-color 0.15s ease, transform 0.1s ease;
+}
+.btn-mtn:hover, .btn-mtn:focus {
+  background-color: var(--mtn-yellow-dark);
+  color: var(--mtn-black);
+}
+.btn-mtn:active { transform: scale(0.98); }
+
+.btn-mtn-dark {
+  background-color: var(--mtn-black);
+  border: none;
+  color: #fff;
+  font-weight: 700;
+  border-radius: 10px;
+  padding: 0.55rem 1.25rem;
+}
+.btn-mtn-dark:hover { background-color: #000; color: #fff; }
+
+.btn-mtn-outline {
+  background: transparent;
+  border: 1.5px solid var(--mtn-black);
+  color: var(--mtn-black);
+  font-weight: 600;
+  border-radius: 10px;
+}
+.btn-mtn-outline:hover { background: var(--mtn-black); color: #fff; }
+
+/* ---- Cards ---- */
+.card {
+  border: none;
+  border-radius: var(--mtn-radius);
+  box-shadow: var(--mtn-shadow);
+}
+.card:hover { box-shadow: var(--mtn-shadow-lg); }
+.card-mtn-accent {
+  border-top: 4px solid var(--mtn-yellow);
+}
+
+.stat-card {
+  border-radius: var(--mtn-radius);
+  padding: 1.5rem;
+  background: #fff;
+  box-shadow: var(--mtn-shadow);
+  text-align: center;
+  border-top: 4px solid var(--mtn-yellow);
+}
+.stat-card h3 {
+  font-weight: 800;
+  font-size: 2rem;
+  margin-bottom: 0.15rem;
+}
+.stat-card small { color: var(--mtn-gray-600); font-weight: 600; letter-spacing: 0.3px; text-transform: uppercase; font-size: 0.72rem; }
+
+/* ---- Product / catalogue cards ---- */
+.product-card {
+  border-radius: var(--mtn-radius);
+  overflow: hidden;
+  background: #fff;
+  box-shadow: var(--mtn-shadow);
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+}
+.product-card .product-body { padding: 1.25rem; flex: 1; display: flex; flex-direction: column; }
+.product-card .product-category {
+  font-size: 0.72rem;
+  text-transform: uppercase;
+  letter-spacing: 0.6px;
+  color: var(--mtn-gray-600);
+  font-weight: 700;
+}
+.product-card h5 { font-weight: 700; margin: 0.35rem 0; }
+.product-card .price-tag {
+  display: inline-block;
+  background: var(--mtn-yellow);
+  color: var(--mtn-black);
+  font-weight: 800;
+  padding: 0.25rem 0.7rem;
+  border-radius: 8px;
+  font-size: 0.95rem;
+  margin: 0.5rem 0;
+}
+
+/* ---- Badges ---- */
+.badge-status { font-size: 0.75rem; font-weight: 700; padding: 0.4em 0.7em; border-radius: 7px; }
+
+/* ---- Auth pages ---- */
+.auth-shell {
+  min-height: calc(100vh - 100px);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+.auth-card {
+  display: flex;
+  max-width: 900px;
+  width: 100%;
+  border-radius: 20px;
+  overflow: hidden;
+  box-shadow: var(--mtn-shadow-lg);
+  background: #fff;
+}
+.auth-side {
+  flex: 1;
+  background: linear-gradient(160deg, var(--mtn-yellow) 0%, var(--mtn-yellow-dark) 100%);
+  color: var(--mtn-black);
+  padding: 3rem 2.5rem;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+}
+.auth-side h2 { font-weight: 800; font-size: 1.8rem; }
+.auth-side p { font-weight: 500; opacity: 0.85; }
+.auth-form-side {
+  flex: 1;
+  padding: 3rem 2.5rem;
+}
+@media (max-width: 767px) {
+  .auth-card { flex-direction: column; }
+  .auth-side { padding: 2rem; }
+}
+
+/* ---- Misc ---- */
+.section-title {
+  font-weight: 800;
+  border-left: 5px solid var(--mtn-yellow);
+  padding-left: 0.75rem;
+  margin-bottom: 1.5rem;
+}
+.form-control:focus, .form-select:focus {
+  border-color: var(--mtn-yellow);
+  box-shadow: 0 0 0 0.2rem rgba(255,204,0,0.25);
+}
+.table thead { background-color: var(--mtn-black); color: #fff; }
+.table thead th { border: none; font-weight: 600; font-size: 0.85rem; text-transform: uppercase; letter-spacing: 0.4px; }
+.table-hover tbody tr:hover { background-color: rgba(255,204,0,0.08); }

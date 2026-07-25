@@ -1,7 +1,7 @@
 {% extends "webapp/base.html" %}
 {% block title %}Vérifier transfert #{{ transfer.id }}{% endblock %}
 {% block content %}
-<h2 class="mb-4">Vérifier transfert #{{ transfer.id }}</h2>
+<h2 class="section-title">Vérifier transfert #{{ transfer.id }}</h2>
 <p>{{ transfer.source_shop.name }} → {{ transfer.destination_shop.name }}</p>
 
 <form method="post" class="card p-3">
@@ -24,6 +24,6 @@
     </div>
   {% empty %}<p class="text-muted">Aucun produit IMEI dans ce transfert.</p>{% endfor %}
 
-  <button class="btn btn-dark mt-3">Confirmer la réception</button>
+  <button class="btn btn-mtn mt-3">Confirmer la réception</button>
 </form>
 {% endblock %}

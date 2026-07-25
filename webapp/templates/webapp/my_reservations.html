@@ -1,8 +1,8 @@
 {% extends "webapp/base.html" %}
 {% block title %}Mes réservations{% endblock %}
 {% block content %}
-<h2 class="mb-4">Mes réservations</h2>
-<table class="table table-bordered bg-white">
+<h2 class="section-title">Mes réservations</h2>
+<table class="table table-hover bg-white align-middle">
   <thead><tr><th>Produit</th><th>Boutique</th><th>Statut</th><th>Date</th><th></th></tr></thead>
   <tbody>
     {% for r in reservations %}

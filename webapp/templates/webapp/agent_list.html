@@ -1,10 +1,10 @@
 {% extends "webapp/base.html" %}
 {% block title %}Agents{% endblock %}
 {% block content %}
-<h2 class="mb-4">Agents</h2>
+<h2 class="section-title">Agents</h2>
 <div class="row">
   <div class="col-md-8">
-    <table class="table table-bordered bg-white">
+    <table class="table table-hover bg-white align-middle">
       <thead><tr><th>Nom</th><th>Statut</th><th>Plafond</th><th>En cours</th><th></th></tr></thead>
       <tbody>
         {% for a in agents %}
@@ -14,7 +14,7 @@
           <td>{{ a.credit_limit }}</td>
           <td>{{ a.assignment_set.all|length }}</td>
           <td>
-            <button class="btn btn-sm btn-outline-dark" type="button" data-bs-toggle="collapse" data-bs-target="#assign-{{ a.id }}">
+            <button class="btn btn-sm btn-mtn-outline" type="button" data-bs-toggle="collapse" data-bs-target="#assign-{{ a.id }}">
               Affecter des produits
             </button>
           </td>
@@ -54,7 +54,7 @@
         <div class="mb-2"><label class="form-label">Nom</label><input type="text" name="name" class="form-control" required></div>
         <div class="mb-2"><label class="form-label">Téléphone</label><input type="text" name="phone" class="form-control" required></div>
         <div class="mb-2"><label class="form-label">Plafond de crédit (nb. appareils)</label><input type="number" name="credit_limit" class="form-control" value="5" required></div>
-        <button class="btn btn-dark w-100">Créer</button>
+        <button class="btn btn-mtn w-100">Créer</button>
       </form>
     </div>
   </div>

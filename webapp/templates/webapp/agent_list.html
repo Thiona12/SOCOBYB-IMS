@@ -3,7 +3,7 @@
 {% block content %}
 <h2 class="mb-4">Agents</h2>
 <div class="row">
-  <div class="col-md-7">
+  <div class="col-md-8">
     <table class="table table-bordered bg-white">
       <thead><tr><th>Nom</th><th>Statut</th><th>Plafond</th><th>En cours</th><th></th></tr></thead>
       <tbody>
@@ -14,10 +14,31 @@
           <td>{{ a.credit_limit }}</td>
           <td>{{ a.assignment_set.all|length }}</td>
           <td>
-            <form method="post" action="{% url 'agent_assign' a.id %}" class="d-flex gap-1">
+            <button class="btn btn-sm btn-outline-dark" type="button" data-bs-toggle="collapse" data-bs-target="#assign-{{ a.id }}">
+              Affecter des produits
+            </button>
+          </td>
+        </tr>
+        <tr class="collapse" id="assign-{{ a.id }}">
+          <td colspan="5">
+            <form method="post" action="{% url 'agent_assign' a.id %}" class="p-2">
               {% csrf_token %}
-              <input type="text" name="stock_item_ids" class="form-control form-control-sm" placeholder="IDs stock (ex: 1)" style="width:140px">
-              <button class="btn btn-sm btn-outline-dark">Affecter</button>
+              {% if available_items %}
+                <p class="mb-1 fw-semibold">Choisir les produits (IMEI) disponibles à affecter :</p>
+                <div class="row">
+                  {% for item in available_items %}
+                    <div class="col-md-4 form-check">
+                      <input class="form-check-input" type="checkbox" name="stock_item_ids" value="{{ item.id }}" id="item-{{ a.id }}-{{ item.id }}">
+                      <label class="form-check-label" for="item-{{ a.id }}-{{ item.id }}">
+                        {{ item.identifier }} — {{ item.product.name }}
+                      </label>
+                    </div>
+                  {% endfor %}
+                </div>
+                <button class="btn btn-sm btn-dark mt-2">Confirmer l'affectation</button>
+              {% else %}
+                <p class="text-muted mb-0">Aucun produit suivi (IMEI) disponible actuellement.</p>
+              {% endif %}
             </form>
           </td>
         </tr>
@@ -25,7 +46,7 @@
       </tbody>
     </table>
   </div>
-  <div class="col-md-5">
+  <div class="col-md-4">
     <div class="card p-3">
       <h5>Nouvel agent</h5>
       <form method="post" action="{% url 'agent_create' %}">

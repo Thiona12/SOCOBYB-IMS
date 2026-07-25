@@ -108,7 +108,10 @@ def inventory_receive(request, shop_id):
 @login_required
 def transfer_list(request):
     transfers = Transfer.objects.select_related("source_shop", "destination_shop").order_by("-date")
-    return render(request, "webapp/transfer_list.html", {"is_customer": False, "transfers": transfers, "shops": Shop.objects.all()})
+    available_items = StockItem.objects.filter(status="AVAILABLE").select_related("product")
+    return render(request, "webapp/transfer_list.html", {
+        "is_customer": False, "transfers": transfers, "shops": Shop.objects.all(), "available_items": available_items,
+    })
 
 
 @login_required
@@ -116,25 +119,49 @@ def transfer_create(request):
     if request.method == "POST":
         source = get_object_or_404(Shop, id=request.POST.get("source_shop"))
         destination = get_object_or_404(Shop, id=request.POST.get("destination_shop"))
-        product = get_object_or_404(Product, id=request.POST.get("product_id"))
-        quantity = int(request.POST.get("quantity"))
 
         if source.id == destination.id:
             messages.error(request, "La boutique source et destination doivent être différentes.")
             return redirect("transfer_list")
 
-        inv = Inventory.objects.filter(shop=source, product=product).first()
-        if not inv or inv.quantity < quantity:
-            messages.error(request, f"Stock insuffisant pour {product.name} à {source.name}.")
+        product_id = request.POST.get("product_id")
+        quantity = request.POST.get("quantity")
+        stock_item_ids = [int(x) for x in request.POST.getlist("stock_item_ids")]
+
+        if not product_id and not stock_item_ids:
+            messages.error(request, "Choisissez un produit en vrac ou des articles IMEI à transférer.")
             return redirect("transfer_list")
 
         with transaction.atomic():
-            inv.quantity -= quantity
-            inv.save()
             transfer = Transfer.objects.create(source_shop=source, destination_shop=destination, status="PENDING")
-            TransferBulkDetail.objects.create(transfer=transfer, product=product, shipped_quantity=quantity, verification_status="PENDING")
+            created_something = False
 
-        messages.success(request, f"Transfert #{transfer.id} créé : {quantity} x {product.name}.")
+            if product_id and quantity:
+                product = get_object_or_404(Product, id=product_id)
+                quantity = int(quantity)
+                inv = Inventory.objects.filter(shop=source, product=product).first()
+                if not inv or inv.quantity < quantity:
+                    messages.error(request, f"Stock en vrac insuffisant pour {product.name} à {source.name}.")
+                    transfer.delete()
+                    return redirect("transfer_list")
+                inv.quantity -= quantity
+                inv.save()
+                TransferBulkDetail.objects.create(transfer=transfer, product=product, shipped_quantity=quantity, verification_status="PENDING")
+                created_something = True
+
+            if stock_item_ids:
+                items = StockItem.objects.filter(id__in=stock_item_ids, status="AVAILABLE")
+                if items.count() != len(stock_item_ids):
+                    messages.error(request, "Un ou plusieurs articles IMEI sélectionnés ne sont plus disponibles.")
+                    transfer.delete()
+                    return redirect("transfer_list")
+                for item in items:
+                    item.status = "RESERVED"
+                    item.save()
+                    TransferDetail.objects.create(transfer=transfer, stock_item=item, verification_status="PENDING")
+                created_something = True
+
+        messages.success(request, f"Transfert #{transfer.id} créé.")
         return redirect("transfer_list")
     return redirect("transfer_list")
 
@@ -228,7 +255,8 @@ def sale_create(request):
 @login_required
 def agent_list(request):
     agents = Agent.objects.all()
-    return render(request, "webapp/agent_list.html", {"is_customer": False, "agents": agents})
+    available_items = StockItem.objects.filter(status="AVAILABLE").select_related("product")
+    return render(request, "webapp/agent_list.html", {"is_customer": False, "agents": agents, "available_items": available_items})
 
 
 @login_required
@@ -246,8 +274,7 @@ def agent_create(request):
 def agent_assign(request, agent_id):
     agent = get_object_or_404(Agent, id=agent_id)
     if request.method == "POST":
-        raw_ids = request.POST.get("stock_item_ids", "")
-        stock_item_ids = [int(x.strip()) for x in raw_ids.split(",") if x.strip()]
+        stock_item_ids = [int(x) for x in request.POST.getlist("stock_item_ids")]
         outstanding = AssignmentDetail.objects.filter(assignment__agent=agent, payment_status="UNPAID").count()
 
         if outstanding + len(stock_item_ids) > agent.credit_limit:
@@ -307,7 +334,11 @@ def my_reservations(request):
 
 @login_required
 def cancel_reservation(request, reservation_id):
+    """POST-only — a GET link here would let any crawler/prefetch accidentally
+    cancel a reservation, which is exactly the kind of unsafe-GET mistake to avoid."""
     reservation = get_object_or_404(Reservation, id=reservation_id, user=request.user)
+    if request.method != "POST":
+        return redirect("my_reservations")
     reservation.status = "CANCELLED"
     reservation.save()
     messages.info(request, "Réservation annulée.")

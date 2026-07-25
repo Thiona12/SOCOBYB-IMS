@@ -10,7 +10,12 @@
       <td>{{ r.product.name }}</td><td>{{ r.shop.name }}</td>
       <td><span class="badge {% if r.status == 'CONVERTED' %}bg-success{% elif r.status == 'CANCELLED' %}bg-secondary{% else %}bg-info{% endif %}">{{ r.status }}</span></td>
       <td>{{ r.created_date|date:"d/m/Y" }}</td>
-      <td>{% if r.status == 'PENDING' %}<a href="{% url 'cancel_reservation' r.id %}" class="btn btn-sm btn-outline-danger">Annuler</a>{% endif %}</td>
+      <td>{% if r.status == 'PENDING' %}
+        <form method="post" action="{% url 'cancel_reservation' r.id %}">
+          {% csrf_token %}
+          <button type="submit" class="btn btn-sm btn-outline-danger">Annuler</button>
+        </form>
+      {% endif %}</td>
     </tr>
     {% empty %}<tr><td colspan="5" class="text-muted">Aucune réservation.</td></tr>{% endfor %}
   </tbody>

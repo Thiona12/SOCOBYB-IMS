@@ -40,3 +40,20 @@ class TransferDetail(models.Model):
 
     class Meta:
         db_table = "transfer_details"
+
+
+class TransferBulkDetail(models.Model):
+    """Handles bulk (non-serialized) products in a transfer, where TransferDetail/StockItem
+    don't apply since there's no individual identifier to track — just a quantity moving
+    from source Inventory to destination Inventory. Added to close the gap noted in the
+    Django backend README: transfers only moved StockItem-tracked products correctly."""
+    VERIFICATION_CHOICES = [("PENDING", "Pending"), ("MATCHED", "Matched"), ("DISCREPANCY", "Discrepancy")]
+
+    transfer = models.ForeignKey(Transfer, on_delete=models.CASCADE, related_name="bulk_details")
+    product = models.ForeignKey("catalog.Product", on_delete=models.CASCADE)
+    shipped_quantity = models.PositiveIntegerField()
+    received_quantity = models.PositiveIntegerField(null=True, blank=True)
+    verification_status = models.CharField(max_length=12, choices=VERIFICATION_CHOICES, default="PENDING")
+
+    class Meta:
+        db_table = "transfer_bulk_details"

@@ -61,5 +61,5 @@ Every stub from the previous version is now real, tested logic:
 
 All four of the trickiest business rules (IMEI discrepancy, credit limit, inventory reduction, reception) were verified against a live test server, not just written — see commit history for the exact test sequence.
 
-### Known simplification to revisit
-`TransferVerifyView` doesn't yet move `Inventory` row quantities between source/destination shops — it updates `StockItem.status` and `TransferDetail.verification_status` correctly, but the `Inventory.quantity` counters for bulk (non-serialized) products during a transfer aren't adjusted yet. Fine for tracked (IMEI) products since those live on `StockItem` directly; needs finishing for bulk-product transfers.
+### Fixed — bulk product transfers
+Transfers now correctly handle bulk (non-serialized) products via `bulkItems`: source `Inventory.quantity` is decremented (reserved) at creation time, and `POST /transfers/{id}/verify` accepts `receivedBulkItems` to credit the destination `Inventory` row (created if it doesn't exist yet) with whatever quantity actually arrived. Short/over deliveries are flagged as `COMPLETED_WITH_DISCREPANCY` with the shipped-vs-received numbers returned, same pattern as IMEI mismatches.

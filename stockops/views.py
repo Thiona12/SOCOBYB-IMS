@@ -4,8 +4,9 @@ from rest_framework.response import Response
 from rest_framework.generics import get_object_or_404
 from accounts.models import Shop
 from accounts.permissions import HasPermission
-from inventory.models import StockItem, StockMovement
-from .models import StockRequest, Transfer, TransferDetail
+from catalog.models import Product
+from inventory.models import StockItem, StockMovement, Inventory
+from .models import StockRequest, Transfer, TransferDetail, TransferBulkDetail
 from .serializers import (
     StockRequestSerializer, TransferCreateSerializer, TransferVerifySerializer, TransferSerializer,
 )
@@ -48,8 +49,11 @@ class StockRequestRejectView(APIView):
 
 
 class TransferCreateView(APIView):
-    """POST /transfers — UC-07, BR-TRF-001: reserves stock (sets RESERVED),
-    creates a TransferDetail per stock item."""
+    """POST /transfers — UC-07, BR-TRF-001: reserves stock at creation time.
+    Tracked items: stock item status -> RESERVED (unchanged from before).
+    Bulk items: source Inventory.quantity is decremented immediately (reserved),
+    and only credited to the destination once verify() confirms receipt — this
+    was the gap flagged in the README; now fixed."""
     permission_classes = [HasPermission("TRANSFER_CREATE")]
 
     @transaction.atomic
@@ -64,20 +68,45 @@ class TransferCreateView(APIView):
         if data.get("requestId"):
             stock_request = get_object_or_404(StockRequest, id=data["requestId"])
 
-        stock_items = StockItem.objects.filter(id__in=data["stockItemIds"], status="AVAILABLE")
-        if stock_items.count() != len(data["stockItemIds"]):
+        stock_item_ids = data.get("stockItemIds", [])
+        bulk_items = data.get("bulkItems", [])
+
+        stock_items = StockItem.objects.filter(id__in=stock_item_ids, status="AVAILABLE")
+        if stock_items.count() != len(stock_item_ids):
             return Response(
                 {"error": {"code": "STOCK_INSUFFICIENT", "message": "One or more stock items are not available"}},
                 status=409,
             )
 
+        # Validate bulk availability BEFORE mutating anything.
+        source_inventories = {}
+        for bulk in bulk_items:
+            inv = Inventory.objects.filter(shop=source, product_id=bulk["productId"]).first()
+            if not inv or inv.quantity < bulk["quantity"]:
+                return Response(
+                    {"error": {"code": "STOCK_INSUFFICIENT",
+                               "message": f"Not enough bulk stock for productId={bulk['productId']} at source shop"}},
+                    status=409,
+                )
+            source_inventories[bulk["productId"]] = inv
+
         transfer = Transfer.objects.create(
             source_shop=source, destination_shop=destination, request=stock_request, status="PENDING"
         )
+
         for item in stock_items:
             item.status = "RESERVED"
             item.save()
             TransferDetail.objects.create(transfer=transfer, stock_item=item, verification_status="PENDING")
+
+        for bulk in bulk_items:
+            inv = source_inventories[bulk["productId"]]
+            inv.quantity -= bulk["quantity"]  # reserved out of source immediately
+            inv.save()
+            TransferBulkDetail.objects.create(
+                transfer=transfer, product_id=bulk["productId"],
+                shipped_quantity=bulk["quantity"], verification_status="PENDING",
+            )
 
         return Response(TransferSerializer(transfer).data, status=201)
 
@@ -94,9 +123,14 @@ class TransferShipView(APIView):
 
 
 class TransferVerifyView(APIView):
-    """POST /transfers/{id}/verify — BR-TRF-002: compare received identifiers to
-    what was actually shipped. Any mismatch => COMPLETED_WITH_DISCREPANCY, and the
-    mismatched identifiers are returned so staff can investigate."""
+    """POST /transfers/{id}/verify — BR-TRF-002: compare received identifiers/quantities to
+    what was actually shipped. Any mismatch => COMPLETED_WITH_DISCREPANCY, and the specifics
+    are returned so staff can investigate.
+
+    Tracked items: identifier-by-identifier match (unchanged from before).
+    Bulk items: received quantity is credited to the DESTINATION Inventory (get_or_create'd
+    if this is the first time that product arrives at that shop) — this is the fix for the
+    gap noted in the README; previously nothing happened to Inventory rows on verify."""
     permission_classes = [HasPermission("TRANSFER_APPROVE")]
 
     @transaction.atomic
@@ -104,16 +138,22 @@ class TransferVerifyView(APIView):
         transfer = get_object_or_404(Transfer, id=transfer_id)
         serializer = TransferVerifySerializer(data=request.data)
         serializer.is_valid(raise_exception=True)
-        received = set(serializer.validated_data["receivedIdentifiers"])
+        received_identifiers = set(serializer.validated_data.get("receivedIdentifiers", []))
+        received_bulk = {b["productId"]: b["quantity"] for b in serializer.validated_data.get("receivedBulkItems", [])}
 
+        has_discrepancy = False
+        mismatched_identifiers = []
+        bulk_discrepancies = []
+
+        # ---- Tracked items ----
         details = TransferDetail.objects.filter(transfer=transfer).select_related("stock_item")
-        expected = {d.stock_item.identifier for d in details if d.stock_item.identifier}
-
-        mismatched = list(expected.symmetric_difference(received))
-        has_discrepancy = len(mismatched) > 0
+        expected_identifiers = {d.stock_item.identifier for d in details if d.stock_item.identifier}
+        mismatched_identifiers = list(expected_identifiers.symmetric_difference(received_identifiers))
+        if mismatched_identifiers:
+            has_discrepancy = True
 
         for detail in details:
-            if detail.stock_item.identifier in received:
+            if detail.stock_item.identifier in received_identifiers:
                 detail.verification_status = "MATCHED"
                 detail.stock_item.status = "AVAILABLE"  # now available at destination
             else:
@@ -121,15 +161,39 @@ class TransferVerifyView(APIView):
             detail.save()
             detail.stock_item.save()
 
-        # Move inventory: decrement source, increment destination (simplified — assumes
-        # Inventory rows already exist; a real implementation would get_or_create them).
+        # ---- Bulk items: credit destination Inventory with whatever actually arrived ----
+        bulk_details = TransferBulkDetail.objects.filter(transfer=transfer)
+        for bulk_detail in bulk_details:
+            received_qty = received_bulk.get(bulk_detail.product_id, 0)
+            bulk_detail.received_quantity = received_qty
+
+            if received_qty != bulk_detail.shipped_quantity:
+                has_discrepancy = True
+                bulk_detail.verification_status = "DISCREPANCY"
+                bulk_discrepancies.append({
+                    "productId": bulk_detail.product_id,
+                    "shipped": bulk_detail.shipped_quantity,
+                    "received": received_qty,
+                })
+            else:
+                bulk_detail.verification_status = "MATCHED"
+            bulk_detail.save()
+
+            if received_qty > 0:
+                dest_inventory, _ = Inventory.objects.get_or_create(
+                    shop=transfer.destination_shop, product_id=bulk_detail.product_id
+                )
+                dest_inventory.quantity += received_qty
+                dest_inventory.save()
+
         transfer.status = "COMPLETED_WITH_DISCREPANCY" if has_discrepancy else "COMPLETED"
         transfer.save()
 
         return Response({
             "transferId": transfer.id,
             "status": transfer.status,
-            "mismatchedIdentifiers": mismatched,
+            "mismatchedIdentifiers": mismatched_identifiers,
+            "bulkDiscrepancies": bulk_discrepancies,
         })
 
 

@@ -1,5 +1,5 @@
 """
-SOCOBYS IMS — Django settings.
+SOCOBYB IMS — Django settings.
 Maps directly to D-11 (database design) and D-08 (security model).
 """
 import os
@@ -24,7 +24,7 @@ INSTALLED_APPS = [
     "rest_framework_simplejwt",
     "corsheaders",
 
-    # SOCOBYS IMS apps — one per D-06 domain
+    # SOCOBYB IMS apps — one per D-06 domain
     "accounts",
     "catalog",
     "inventory",
@@ -60,6 +60,7 @@ TEMPLATES = [
                 "django.template.context_processors.request",
                 "django.contrib.auth.context_processors.auth",
                 "django.contrib.messages.context_processors.messages",
+                "webapp.context_processors.user_permission_flags",
             ],
         },
     },
@@ -74,12 +75,12 @@ WSGI_APPLICATION = "config.wsgi.application"
 # ---- Database (D-11 schema) ----
 # SQLite is the default — no separate DB server to install/run, ideal for a
 # solo internship project. MySQL remains available by setting DB_ENGINE=mysql
-# if SOCOBYS ever needs multi-server / production-grade concurrent access.
+# if SOCOBYB ever needs multi-server / production-grade concurrent access.
 if os.environ.get("DB_ENGINE", "sqlite") == "mysql":
     DATABASES = {
         "default": {
             "ENGINE": "django.db.backends.mysql",
-            "NAME": os.environ.get("DB_NAME", "socobys_ims"),
+            "NAME": os.environ.get("DB_NAME", "socobyb_ims"),
             "HOST": os.environ.get("DB_HOST", "localhost"),
             "PORT": os.environ.get("DB_PORT", "3306"),
             "USER": os.environ.get("DB_USER", "root"),
@@ -120,7 +121,7 @@ REST_FRAMEWORK = {
     ),
     "DEFAULT_PAGINATION_CLASS": "rest_framework.pagination.PageNumberPagination",
     "PAGE_SIZE": 20,
-    "EXCEPTION_HANDLER": "config.exceptions.socobys_exception_handler",
+    "EXCEPTION_HANDLER": "config.exceptions.socobyb_exception_handler",
 }
 
 SIMPLE_JWT = {

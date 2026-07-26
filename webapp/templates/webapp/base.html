@@ -4,7 +4,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <title>{% block title %}SOCOBYS IMS{% endblock %}</title>
+  <title>{% block title %}SOCOBYB IMS{% endblock %}</title>
   <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
@@ -14,7 +14,7 @@
   <nav class="navbar navbar-expand-lg navbar-dark navbar-mtn mb-4">
     <div class="container">
       <a class="navbar-brand" href="{% url 'dashboard' %}">
-        <span class="brand-badge">SOCOBYS</span>
+        <span class="brand-badge">SOCOBYB</span>
         <span>
           <div style="line-height:1;">IMS</div>
           <div class="brand-sub">PARTENAIRE MTN CAMEROUN</div>
@@ -31,10 +31,10 @@
             <li class="nav-item"><a class="nav-link {% if 'reservations' in request.path %}active{% endif %}" href="{% url 'my_reservations' %}">Mes réservations</a></li>
             <li class="nav-item"><a class="nav-link {% if 'favorites' in request.path %}active{% endif %}" href="{% url 'my_favorites' %}">Mes favoris</a></li>
           {% else %}
-            <li class="nav-item"><a class="nav-link {% if request.path == '/inventory/' %}active{% endif %}" href="{% url 'inventory_list' %}">Inventaire</a></li>
-            <li class="nav-item"><a class="nav-link {% if 'transfers' in request.path %}active{% endif %}" href="{% url 'transfer_list' %}">Transferts</a></li>
-            <li class="nav-item"><a class="nav-link {% if 'sales' in request.path %}active{% endif %}" href="{% url 'sale_list' %}">Ventes</a></li>
-            <li class="nav-item"><a class="nav-link {% if 'agents' in request.path %}active{% endif %}" href="{% url 'agent_list' %}">Agents</a></li>
+            {% if can_view_stock %}<li class="nav-item"><a class="nav-link {% if request.path == '/inventory/' %}active{% endif %}" href="{% url 'inventory_list' %}">Inventaire</a></li>{% endif %}
+            {% if can_view_stock %}<li class="nav-item"><a class="nav-link {% if 'transfers' in request.path %}active{% endif %}" href="{% url 'transfer_list' %}">Transferts</a></li>{% endif %}
+            {% if can_view_stock %}<li class="nav-item"><a class="nav-link {% if 'sales' in request.path %}active{% endif %}" href="{% url 'sale_list' %}">Ventes</a></li>{% endif %}
+            {% if can_manage_agents %}<li class="nav-item"><a class="nav-link {% if 'agents' in request.path %}active{% endif %}" href="{% url 'agent_list' %}">Agents</a></li>{% endif %}
           {% endif %}
         </ul>
         <span class="navbar-text me-3">👤 {{ user.name }}</span>

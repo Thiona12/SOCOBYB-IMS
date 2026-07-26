@@ -11,6 +11,7 @@
 
 <h5 class="fw-bold mb-3">Accès rapide</h5>
 <div class="row g-3">
+  {% if can_view_stock %}
   <div class="col-md-4">
     <a href="{% url 'inventory_list' %}" class="text-decoration-none">
       <div class="card p-4 card-mtn-accent h-100">
@@ -38,5 +39,20 @@
       </div>
     </a>
   </div>
+  {% endif %}
+  {% if can_manage_agents %}
+  <div class="col-md-4">
+    <a href="{% url 'agent_list' %}" class="text-decoration-none">
+      <div class="card p-4 card-mtn-accent h-100">
+        <div class="fs-2 mb-2">🧑‍💼</div>
+        <h5 class="fw-bold text-dark mb-1">Agents</h5>
+        <p class="text-muted small mb-0">Gérer les agents et leurs affectations</p>
+      </div>
+    </a>
+  </div>
+  {% endif %}
+  {% if not can_view_stock and not can_manage_agents %}
+  <p class="text-muted">Aucun accès rapide disponible pour votre rôle actuel.</p>
+  {% endif %}
 </div>
 {% endblock %}

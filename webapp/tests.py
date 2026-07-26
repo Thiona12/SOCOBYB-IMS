@@ -58,13 +58,14 @@ class WebTransferFlowTests(TestCase):
     def setUp(self):
         self.shop1, self.shop2 = make_shops()
         make_staff_user("web_transfer_manager", "SHOP_STOCK_MANAGER", shop=self.shop1)
+        make_staff_user("web_transfer_approver", "GENERAL_STOCK_MANAGER")
         category = Category.objects.create(name="Accessories")
         self.product = Product.objects.create(category=category, name="Cable", buying_price=1000, selling_price=2000)
         Inventory.objects.create(shop=self.shop1, product=self.product, quantity=10)
-        self.client.login(username="web_transfer_manager", password="testpass123")
 
     def test_receive_then_transfer_then_verify_moves_inventory(self):
-        # Create a bulk transfer of 4 units.
+        self.client.login(username="web_transfer_manager", password="testpass123")
+        # Create a bulk transfer of 4 units (requires TRANSFER_CREATE).
         resp = self.client.post("/transfers/create/", {
             "source_shop": self.shop1.id, "destination_shop": self.shop2.id,
             "product_id": self.product.id, "quantity": 4,
@@ -78,12 +79,30 @@ class WebTransferFlowTests(TestCase):
         transfer = Transfer.objects.latest("id")
         bulk_detail = transfer.bulk_details.first()
 
+        # Verification requires TRANSFER_APPROVE — a different permission/role than creation,
+        # matching D-08's separation of duties between the two steps.
+        self.client.logout()
+        self.client.login(username="web_transfer_approver", password="testpass123")
         verify_resp = self.client.post(f"/transfers/{transfer.id}/verify/", {
             f"received_{bulk_detail.id}": 4,
         })
         self.assertEqual(verify_resp.status_code, 302)
         dest_inv = Inventory.objects.get(shop=self.shop2, product=self.product)
         self.assertEqual(dest_inv.quantity, 4)
+
+    def test_creator_without_approve_permission_cannot_verify(self):
+        """The exact bug this fix addresses: a SHOP_STOCK_MANAGER (TRANSFER_CREATE only)
+        should NOT be able to verify/approve a transfer — that needs TRANSFER_APPROVE."""
+        self.client.login(username="web_transfer_manager", password="testpass123")
+        self.client.post("/transfers/create/", {
+            "source_shop": self.shop1.id, "destination_shop": self.shop2.id,
+            "product_id": self.product.id, "quantity": 4,
+        })
+        from stockops.models import Transfer
+        transfer = Transfer.objects.latest("id")
+
+        resp = self.client.get(f"/transfers/{transfer.id}/verify/")
+        self.assertEqual(resp.status_code, 302)  # redirected away, access denied
 
     def test_cancel_reservation_requires_post(self):
         """The fix from earlier: GET should no longer cancel a reservation."""

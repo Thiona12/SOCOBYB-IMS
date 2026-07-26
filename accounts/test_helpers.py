@@ -1,5 +1,5 @@
 """Shared test fixtures — seeds the minimal roles/permissions/shops needed
-by tests across apps, mirroring the seed data in socobys_schema.sql."""
+by tests across apps, mirroring the seed data in socobyb_schema.sql."""
 from accounts.models import Role, Permission, RolePermission, User, UserRole, Shop
 
 ALL_PERMISSIONS = [

@@ -1,9 +1,9 @@
-# SOCOBYS IMS — Django Backend
+# SOCOBYB IMS — Django Backend
 
 Scaffold generated from the project's own documentation:
 - **D-07** (class model) → `*/models.py` across all apps
 - **D-08** (security model) → `accounts/models.py` (hybrid Role+direct Permission), `accounts/permissions.py`
-- **D-11** (database design) → same schema as `socobys_schema.sql`, expressed as Django models (`db_table` names match exactly, so this can point at the same MySQL database)
+- **D-11** (database design) → same schema as `socobyb_schema.sql`, expressed as Django models (`db_table` names match exactly, so this can point at the same MySQL database)
 - **D-12** (API design) → `config/urls.py`, one app per D-06 domain
 - **AI features** (forecasting, OCR, ABC classification) → `ai_services/` app, intentionally empty for now — folded into this single Django project per the "one app" decision, not a separate microservice
 
@@ -42,7 +42,7 @@ python manage.py createsuperuser   # optional, for /admin/
 python manage.py runserver
 ```
 
-**Database: SQLite by default.** No separate database server to install or run — Django creates and manages a local `db.sqlite3` file automatically via `migrate`. This matches D-11's schema exactly (same tables, same relationships), just without needing MySQL running. If SOCOBYS later needs multi-server production deployment, set `DB_ENGINE=mysql` in `.env` and use `db/schema.sql` — but for a solo internship project, SQLite is the simpler and recommended choice.
+**Database: SQLite by default.** No separate database server to install or run — Django creates and manages a local `db.sqlite3` file automatically via `migrate`. This matches D-11's schema exactly (same tables, same relationships), just without needing MySQL running. If SOCOBYB later needs multi-server production deployment, set `DB_ENGINE=mysql` in `.env` and use `db/schema.sql` — but for a solo internship project, SQLite is the simpler and recommended choice.
 
 ## Note on the earlier Express scaffold
 This Django scaffold replaces the earlier Node.js/Express one (D-01's original stack). The database schema (D-11) and API design (D-12) are unchanged — only the backend implementation language/framework changed. If you want to keep both around for comparison, they're separate deliverables.
@@ -111,13 +111,13 @@ Shops/Categories CRUD, notifications, and reporting endpoints are simple enough 
 
 ## Update — SQLite by default, MTN-inspired design system
 
-**Database:** switched default from MySQL to SQLite (`DB_ENGINE=sqlite` in `.env.example`). No database server to install or run — `python manage.py migrate` creates `db.sqlite3` automatically. MySQL is still supported (`DB_ENGINE=mysql` + `db/schema.sql`) if SOCOBYS ever needs multi-server production deployment, but for a solo internship project SQLite is simpler and is now the default.
+**Database:** switched default from MySQL to SQLite (`DB_ENGINE=sqlite` in `.env.example`). No database server to install or run — `python manage.py migrate` creates `db.sqlite3` automatically. MySQL is still supported (`DB_ENGINE=mysql` + `db/schema.sql`) if SOCOBYB ever needs multi-server production deployment, but for a solo internship project SQLite is simpler and is now the default.
 
-**Design:** the webapp frontend now has an actual design system (`webapp/static/webapp/css/theme.css`) inspired by MTN's real brand identity — vivid yellow (`#FFCC00`) + black, chosen deliberately (per MTN's own published brand rationale) for trust, energy, and high contrast/accessibility. SOCOBYS is an MTN partner agency, so this ties the system visually to that ecosystem without using MTN's actual logo or trademarked assets.
+**Design:** the webapp frontend now has an actual design system (`webapp/static/webapp/css/theme.css`) inspired by MTN's real brand identity — vivid yellow (`#FFCC00`) + black, chosen deliberately (per MTN's own published brand rationale) for trust, energy, and high contrast/accessibility. SOCOBYB is an MTN partner agency, so this ties the system visually to that ecosystem without using MTN's actual logo or trademarked assets.
 
 What changed:
 - Custom CSS variables, Inter font (Google Fonts), consistent border-radius/shadow language
-- Navbar: black background, yellow "SOCOBYS" badge, active-link highlighting
+- Navbar: black background, yellow "SOCOBYB" badge, active-link highlighting
 - Split-screen login/register pages (yellow brand panel + white form panel)
 - Dashboard: stat cards with yellow top-accent, icon-based quick-access cards
 - Catalogue: proper product cards with category tag, yellow price badge
@@ -125,3 +125,12 @@ What changed:
 - Dark-themed table headers with yellow row-hover highlight
 
 Uses Bootstrap 5 (CDN) as the layout/grid foundation, with the custom theme layered on top — no build tooling, still just HTML + CSS.
+
+## Update — company name fix + real permission-based navigation
+
+**Fixed: company name.** Every "SOCOBYS" in the codebase was renamed to **SOCOBYB** — the correct spelling. An earlier session had wrongly "corrected" the original ChatGPT export from SOCOBYB to SOCOBYS, assuming it was a typo; it wasn't. This is now fixed everywhere: templates, README, settings, function names, comments.
+
+**Fixed: staff nav/dashboard showed identical content regardless of role.** Screenshots from a live deployment showed an Admin and a Stock Manager seeing the exact same navigation and dashboard quick-links — because webapp views only checked `@login_required`, never the actual D-08 permission the way the DRF API does. Now fixed:
+- New `webapp/decorators.py` (`require_permission`) enforces the same permission codes as the API's `HasPermission` on every staff view (inventory, transfers, sales, agents)
+- New `webapp/context_processors.py` exposes the logged-in user's resolved permissions to every template, so nav links and dashboard quick-access cards only appear for what that user can actually do
+- Verified with two users holding genuinely different permission sets: an Admin (no `STOCK_VIEW`/`AGENT_APPROVE`) sees no operational links at all; a Stock Manager sees Inventory/Transfers/Sales but not Agents; and a user with only `TRANSFER_CREATE` (not `TRANSFER_APPROVE`) is correctly blocked from verifying their own transfer — a new test (`test_creator_without_approve_permission_cannot_verify`) locks this in permanently

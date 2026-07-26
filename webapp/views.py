@@ -14,6 +14,7 @@ from django.utils import timezone
 import time
 
 from accounts.models import User, Role, UserRole, Shop
+from webapp.decorators import require_permission
 from catalog.models import Category, Product
 from inventory.models import Inventory, StockItem, StockMovement
 from sales.models import Sale, SaleDetail, Reservation, Favorite
@@ -66,7 +67,7 @@ def dashboard(request):
 
 # ---- Inventory ----
 
-@login_required
+@require_permission("STOCK_VIEW")
 def inventory_list(request):
     if is_customer(request.user):
         return redirect("catalogue")
@@ -80,7 +81,7 @@ def inventory_list(request):
     })
 
 
-@login_required
+@require_permission("STOCK_ADJUST")
 def inventory_receive(request, shop_id):
     shop = get_object_or_404(Shop, id=shop_id)
     if request.method == "POST":
@@ -105,7 +106,7 @@ def inventory_receive(request, shop_id):
 
 # ---- Transfers ----
 
-@login_required
+@require_permission("STOCK_VIEW")
 def transfer_list(request):
     transfers = Transfer.objects.select_related("source_shop", "destination_shop").order_by("-date")
     available_items = StockItem.objects.filter(status="AVAILABLE").select_related("product")
@@ -114,7 +115,7 @@ def transfer_list(request):
     })
 
 
-@login_required
+@require_permission("TRANSFER_CREATE")
 def transfer_create(request):
     if request.method == "POST":
         source = get_object_or_404(Shop, id=request.POST.get("source_shop"))
@@ -166,7 +167,7 @@ def transfer_create(request):
     return redirect("transfer_list")
 
 
-@login_required
+@require_permission("TRANSFER_APPROVE")
 def transfer_verify(request, transfer_id):
     transfer = get_object_or_404(Transfer, id=transfer_id)
     if request.method == "POST":
@@ -206,7 +207,7 @@ def transfer_verify(request, transfer_id):
 
 # ---- Sales ----
 
-@login_required
+@require_permission("STOCK_VIEW")
 def sale_list(request):
     sales = Sale.objects.select_related("shop", "user").order_by("-date")[:50]
     return render(request, "webapp/sale_list.html", {
@@ -215,7 +216,7 @@ def sale_list(request):
     })
 
 
-@login_required
+@require_permission("STOCK_VIEW")
 def sale_create(request):
     if request.method == "POST":
         shop = get_object_or_404(Shop, id=request.POST.get("shop_id"))
@@ -252,14 +253,14 @@ def sale_create(request):
 
 # ---- Agents ----
 
-@login_required
+@require_permission("AGENT_APPROVE")
 def agent_list(request):
     agents = Agent.objects.all()
     available_items = StockItem.objects.filter(status="AVAILABLE").select_related("product")
     return render(request, "webapp/agent_list.html", {"is_customer": False, "agents": agents, "available_items": available_items})
 
 
-@login_required
+@require_permission("AGENT_APPROVE")
 def agent_create(request):
     if request.method == "POST":
         Agent.objects.create(
@@ -270,7 +271,7 @@ def agent_create(request):
     return redirect("agent_list")
 
 
-@login_required
+@require_permission("AGENT_APPROVE")
 def agent_assign(request, agent_id):
     agent = get_object_or_404(Agent, id=agent_id)
     if request.method == "POST":

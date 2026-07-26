@@ -22,6 +22,15 @@ urlpatterns = [
     path("agents/create/", views.agent_create, name="agent_create"),
     path("agents/<int:agent_id>/assign/", views.agent_assign, name="agent_assign"),
 
+    path("utilisateurs/", views.user_list, name="user_list"),
+    path("utilisateurs/create/", views.user_create, name="user_create"),
+    path("utilisateurs/<int:user_id>/", views.user_detail, name="user_detail"),
+    path("utilisateurs/<int:user_id>/toggle-status/", views.user_toggle_status, name="user_toggle_status"),
+    path("utilisateurs/<int:user_id>/add-role/", views.user_add_role, name="user_add_role"),
+    path("utilisateurs/<int:user_id>/remove-role/<int:role_id>/", views.user_remove_role, name="user_remove_role"),
+    path("utilisateurs/<int:user_id>/add-permission/", views.user_add_permission, name="user_add_permission"),
+    path("utilisateurs/<int:user_id>/remove-permission/<int:permission_id>/", views.user_remove_permission, name="user_remove_permission"),
+
     path("catalogue/", views.catalogue, name="catalogue"),
     path("catalogue/<int:product_id>/reserve/", views.reserve_product, name="reserve_product"),
     path("catalogue/<int:product_id>/favorite/", views.toggle_favorite, name="toggle_favorite"),

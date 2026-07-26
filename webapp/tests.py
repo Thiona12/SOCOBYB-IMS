@@ -118,3 +118,83 @@ class WebTransferFlowTests(TestCase):
         post_resp = self.client.post(f"/my-reservations/{reservation.id}/cancel/")
         reservation.refresh_from_db()
         self.assertEqual(reservation.status, "CANCELLED")  # POST actually cancels
+
+
+class WebUserManagementTests(TestCase):
+    """Tests the new user management module and role-specific dashboard content."""
+
+    def setUp(self):
+        from accounts.test_helpers import seed_roles_and_permissions
+        seed_roles_and_permissions()
+        self.admin = make_staff_user("web_admin", "GENERAL_ADMINISTRATOR")
+        self.stockmgr = make_staff_user("web_stockmgr_nouser", "SHOP_STOCK_MANAGER")
+
+    def test_admin_sees_user_management_nav_stockmgr_does_not(self):
+        self.client.login(username="web_admin", password="testpass123")
+        resp = self.client.get("/")
+        self.assertContains(resp, "Utilisateurs")
+
+        self.client.logout()
+        self.client.login(username="web_stockmgr_nouser", password="testpass123")
+        resp = self.client.get("/")
+        self.assertNotContains(resp, "Utilisateurs")
+
+    def test_non_admin_cannot_access_user_management(self):
+        self.client.login(username="web_stockmgr_nouser", password="testpass123")
+        resp = self.client.get("/utilisateurs/")
+        self.assertEqual(resp.status_code, 302)  # redirected, access denied
+
+    def test_admin_can_create_staff_user_with_role(self):
+        from accounts.models import Role, User
+        self.client.login(username="web_admin", password="testpass123")
+        role = Role.objects.get(name="SHOP_STOCK_MANAGER")
+        resp = self.client.post("/utilisateurs/create/", {
+            "name": "Test Staffer", "phone": "677444444", "username": "teststaffer",
+            "password": "staffpass123", "role_id": role.id,
+        })
+        self.assertEqual(resp.status_code, 302)
+        new_user = User.objects.get(username="teststaffer")
+        self.assertTrue(new_user.roles.filter(name="SHOP_STOCK_MANAGER").exists())
+
+    def test_admin_can_grant_and_revoke_direct_permission(self):
+        from accounts.models import Permission, UserPermission
+        self.client.login(username="web_admin", password="testpass123")
+        permission = Permission.objects.get(code="AGENT_APPROVE")
+
+        self.client.post(f"/utilisateurs/{self.stockmgr.id}/add-permission/", {"permission_id": permission.id})
+        self.assertTrue(UserPermission.objects.filter(user=self.stockmgr, permission=permission).exists())
+        self.stockmgr.refresh_from_db()
+        self.assertTrue(self.stockmgr.has_perm_code("AGENT_APPROVE"))
+
+        self.client.post(f"/utilisateurs/{self.stockmgr.id}/remove-permission/{permission.id}/")
+        self.assertFalse(UserPermission.objects.filter(user=self.stockmgr, permission=permission).exists())
+
+    def test_admin_can_deactivate_user(self):
+        self.client.login(username="web_admin", password="testpass123")
+        resp = self.client.post(f"/utilisateurs/{self.stockmgr.id}/toggle-status/")
+        self.assertEqual(resp.status_code, 302)
+        self.stockmgr.refresh_from_db()
+        self.assertEqual(self.stockmgr.status, "INACTIVE")
+
+
+class WebRoleSpecificDashboardTests(TestCase):
+    """The other half of this update: dashboards show only what each role's
+    permissions actually cover, not a one-size-fits-all view."""
+
+    def setUp(self):
+        from accounts.test_helpers import seed_roles_and_permissions
+        seed_roles_and_permissions()
+        self.admin = make_staff_user("dash_admin", "GENERAL_ADMINISTRATOR")
+        self.stockmgr = make_staff_user("dash_stockmgr", "SHOP_STOCK_MANAGER")
+
+    def test_admin_dashboard_shows_staff_counts_not_stock_counts(self):
+        self.client.login(username="dash_admin", password="testpass123")
+        resp = self.client.get("/")
+        self.assertContains(resp, "Utilisateurs staff")
+        self.assertNotContains(resp, "Alertes stock faible")
+
+    def test_stockmgr_dashboard_shows_stock_counts_not_staff_counts(self):
+        self.client.login(username="dash_stockmgr", password="testpass123")
+        resp = self.client.get("/")
+        self.assertContains(resp, "Alertes stock faible")
+        self.assertNotContains(resp, "Utilisateurs staff")

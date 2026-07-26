@@ -35,6 +35,7 @@
             {% if can_view_stock %}<li class="nav-item"><a class="nav-link {% if 'transfers' in request.path %}active{% endif %}" href="{% url 'transfer_list' %}">Transferts</a></li>{% endif %}
             {% if can_view_stock %}<li class="nav-item"><a class="nav-link {% if 'sales' in request.path %}active{% endif %}" href="{% url 'sale_list' %}">Ventes</a></li>{% endif %}
             {% if can_manage_agents %}<li class="nav-item"><a class="nav-link {% if 'agents' in request.path %}active{% endif %}" href="{% url 'agent_list' %}">Agents</a></li>{% endif %}
+            {% if can_manage_users %}<li class="nav-item"><a class="nav-link {% if 'utilisateurs' in request.path %}active{% endif %}" href="{% url 'user_list' %}">Utilisateurs</a></li>{% endif %}
           {% endif %}
         </ul>
         <span class="navbar-text me-3">👤 {{ user.name }}</span>

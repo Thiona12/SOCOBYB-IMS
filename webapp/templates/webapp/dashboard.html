@@ -2,11 +2,34 @@
 {% block title %}Tableau de bord{% endblock %}
 {% block content %}
 <h2 class="section-title">Tableau de bord</h2>
+<p class="text-muted mb-4">
+  Connecté en tant que <strong>{{ user.name }}</strong> —
+  {% for r in role_names %}<span class="badge bg-secondary me-1">{{ r }}</span>{% endfor %}
+</p>
+
 <div class="row g-3 mb-4">
   <div class="col-6 col-md-3"><div class="stat-card"><h3>{{ shop_count }}</h3><small>Boutiques</small></div></div>
   <div class="col-6 col-md-3"><div class="stat-card"><h3>{{ product_count }}</h3><small>Produits</small></div></div>
+
+  {% if can_view_stock %}
   <div class="col-6 col-md-3"><div class="stat-card"><h3>{{ pending_requests }}</h3><small>Demandes en attente</small></div></div>
   <div class="col-6 col-md-3"><div class="stat-card"><h3>{{ pending_transfers }}</h3><small>Transferts en cours</small></div></div>
+  <div class="col-6 col-md-3"><div class="stat-card"><h3>{{ low_stock }}</h3><small>Alertes stock faible</small></div></div>
+  {% endif %}
+
+  {% if staff_count is not None %}
+  <div class="col-6 col-md-3"><div class="stat-card"><h3>{{ staff_count }}</h3><small>Utilisateurs staff</small></div></div>
+  <div class="col-6 col-md-3"><div class="stat-card"><h3>{{ customer_count }}</h3><small>Clients inscrits</small></div></div>
+  {% endif %}
+
+  {% if can_manage_agents %}
+  <div class="col-6 col-md-3"><div class="stat-card"><h3>{{ pending_agents }}</h3><small>Agents en attente</small></div></div>
+  <div class="col-6 col-md-3"><div class="stat-card"><h3>{{ agent_outstanding }}</h3><small>Appareils impayés</small></div></div>
+  {% endif %}
+
+  {% if can_view_reports %}
+  <div class="col-6 col-md-3"><div class="stat-card"><h3>{{ total_sales }}</h3><small>Ventes totales</small></div></div>
+  {% endif %}
 </div>
 
 <h5 class="fw-bold mb-3">Accès rapide</h5>
@@ -40,6 +63,7 @@
     </a>
   </div>
   {% endif %}
+
   {% if can_manage_agents %}
   <div class="col-md-4">
     <a href="{% url 'agent_list' %}" class="text-decoration-none">
@@ -51,7 +75,20 @@
     </a>
   </div>
   {% endif %}
-  {% if not can_view_stock and not can_manage_agents %}
+
+  {% if can_manage_users %}
+  <div class="col-md-4">
+    <a href="{% url 'user_list' %}" class="text-decoration-none">
+      <div class="card p-4 card-mtn-accent h-100">
+        <div class="fs-2 mb-2">👥</div>
+        <h5 class="fw-bold text-dark mb-1">Utilisateurs</h5>
+        <p class="text-muted small mb-0">Créer des comptes staff, gérer rôles et permissions</p>
+      </div>
+    </a>
+  </div>
+  {% endif %}
+
+  {% if not can_view_stock and not can_manage_agents and not can_manage_users %}
   <p class="text-muted">Aucun accès rapide disponible pour votre rôle actuel.</p>
   {% endif %}
 </div>

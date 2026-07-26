@@ -134,3 +134,20 @@ Uses Bootstrap 5 (CDN) as the layout/grid foundation, with the custom theme laye
 - New `webapp/decorators.py` (`require_permission`) enforces the same permission codes as the API's `HasPermission` on every staff view (inventory, transfers, sales, agents)
 - New `webapp/context_processors.py` exposes the logged-in user's resolved permissions to every template, so nav links and dashboard quick-access cards only appear for what that user can actually do
 - Verified with two users holding genuinely different permission sets: an Admin (no `STOCK_VIEW`/`AGENT_APPROVE`) sees no operational links at all; a Stock Manager sees Inventory/Transfers/Sales but not Agents; and a user with only `TRANSFER_CREATE` (not `TRANSFER_APPROVE`) is correctly blocked from verifying their own transfer — a new test (`test_creator_without_approve_permission_cannot_verify`) locks this in permanently
+
+## Update — user management interface + role-specific dashboards
+
+**User management** (`/utilisateurs/`, gated by `USER_CREATE`): a full interface for General Administrators (and Shop Administrators, via `USER_UPDATE`) to:
+- List all staff and customer accounts, with their roles and status
+- Create new staff users, assigning a role and (optionally) a shop at creation time
+- View/manage an individual user: activate/deactivate the account, add or remove roles, and grant or revoke **direct permissions** (D-08's hybrid model — a permission bypassing the role system entirely, e.g. a temporary `AGENT_APPROVE` grant to a Shop Stock Manager without changing their role)
+
+**Role-specific dashboards**: previously every staff member saw the same dashboard regardless of role. Now the dashboard only computes and shows stats relevant to what the logged-in user's permissions actually cover:
+- `STOCK_VIEW` → pending requests, pending transfers, low-stock alerts
+- `USER_CREATE` → staff/customer account counts
+- `AGENT_APPROVE` → pending agent approvals, outstanding unpaid devices
+- `REPORT_VIEW` → total sales count
+
+**Bug fixed along the way:** `USER_UPDATE` was referenced in a view (`user_toggle_status`) but never actually granted to any role in the seed data — found via a failing test (`test_admin_can_deactivate_user`), not by re-reading the code. Now correctly granted to `GENERAL_ADMINISTRATOR` and `SHOP_ADMINISTRATOR`.
+
+51 tests total (was 44), all passing.

@@ -12,4 +12,5 @@ def user_permission_flags(request):
         "can_approve_transfer": "TRANSFER_APPROVE" in perms,
         "can_manage_agents": "AGENT_APPROVE" in perms,
         "can_view_reports": "REPORT_VIEW" in perms,
+        "can_manage_users": "USER_CREATE" in perms,
     }

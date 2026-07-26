@@ -13,7 +13,7 @@ from django.shortcuts import render, redirect, get_object_or_404
 from django.utils import timezone
 import time
 
-from accounts.models import User, Role, UserRole, Shop
+from accounts.models import User, Role, UserRole, Shop, Permission, UserPermission
 from webapp.decorators import require_permission
 from catalog.models import Category, Product
 from inventory.models import Inventory, StockItem, StockMovement
@@ -54,14 +54,33 @@ def dashboard(request):
     if is_customer(request.user):
         return redirect("catalogue")
 
+    user = request.user
+    perms = set(user.resolved_permissions())
     context = {
         "is_customer": False,
+        "role_names": list(user.roles.values_list("name", flat=True)),
         "shop_count": Shop.objects.count(),
         "product_count": Product.objects.count(),
-        "pending_requests": StockRequest.objects.filter(status="PENDING").count(),
-        "pending_transfers": Transfer.objects.filter(status__in=["PENDING", "IN_TRANSIT"]).count(),
-        "low_stock": Inventory.objects.filter(quantity__lte=1).count(),
     }
+
+    # Only compute/show what this specific user's permissions actually cover —
+    # an Admin with no STOCK_VIEW shouldn't see stock counts; a Stock Manager
+    # with no USER_CREATE shouldn't see staff counts.
+    if "STOCK_VIEW" in perms:
+        context["pending_requests"] = StockRequest.objects.filter(status="PENDING").count()
+        context["pending_transfers"] = Transfer.objects.filter(status__in=["PENDING", "IN_TRANSIT"]).count()
+        context["low_stock"] = Inventory.objects.filter(quantity__lte=1).count()
+    if "USER_CREATE" in perms:
+        context["staff_count"] = User.objects.filter(roles__name__in=[
+            "GENERAL_ADMINISTRATOR", "GENERAL_STOCK_MANAGER", "SHOP_ADMINISTRATOR", "SHOP_STOCK_MANAGER",
+        ]).distinct().count()
+        context["customer_count"] = User.objects.filter(roles__name="CUSTOMER").count()
+    if "AGENT_APPROVE" in perms:
+        context["pending_agents"] = Agent.objects.filter(status="PENDING").count()
+        context["agent_outstanding"] = AssignmentDetail.objects.filter(payment_status="UNPAID").count()
+    if "REPORT_VIEW" in perms:
+        context["total_sales"] = Sale.objects.count()
+
     return render(request, "webapp/dashboard.html", context)
 
 
@@ -292,6 +311,89 @@ def agent_assign(request, agent_id):
         messages.success(request, f"{len(stock_item_ids)} produit(s) affecté(s) à {agent.name}.")
     return redirect("agent_list")
 
+
+# ---- User Management (UC-01, UC-02) ----
+
+@require_permission("USER_CREATE")
+def user_list(request):
+    users = User.objects.exclude(id=request.user.id).prefetch_related("roles", "shop").order_by("name")
+    return render(request, "webapp/user_list.html", {
+        "is_customer": False, "users": users, "shops": Shop.objects.all(), "roles": Role.objects.exclude(name="CUSTOMER"),
+    })
+
+
+@require_permission("USER_CREATE")
+def user_create(request):
+    if request.method == "POST":
+        username = request.POST.get("username", "").strip()
+        if User.objects.filter(username=username).exists():
+            messages.error(request, "Nom d'utilisateur déjà utilisé.")
+            return redirect("user_list")
+
+        shop_id = request.POST.get("shop_id") or None
+        user_number = f"STAFF-{str(int(time.time()))[-6:]}"
+        new_user = User.objects.create_user(
+            username=username, name=request.POST.get("name", "").strip(),
+            phone=request.POST.get("phone", "").strip(), password=request.POST.get("password"),
+            user_number=user_number, shop_id=shop_id,
+        )
+        role = get_object_or_404(Role, id=request.POST.get("role_id"))
+        UserRole.objects.get_or_create(user=new_user, role=role)
+        messages.success(request, f"Utilisateur {new_user.name} créé avec le rôle {role.name}.")
+    return redirect("user_list")
+
+
+@require_permission("USER_CREATE")
+def user_detail(request, user_id):
+    target_user = get_object_or_404(User, id=user_id)
+    from accounts.models import Permission as PermissionModel
+    return render(request, "webapp/user_detail.html", {
+        "is_customer": False, "target_user": target_user,
+        "all_roles": Role.objects.all(), "all_permissions": PermissionModel.objects.all(),
+    })
+
+
+@require_permission("USER_UPDATE")
+def user_toggle_status(request, user_id):
+    target_user = get_object_or_404(User, id=user_id)
+    target_user.status = "INACTIVE" if target_user.status == "ACTIVE" else "ACTIVE"
+    target_user.save()
+    messages.success(request, f"{target_user.name} est maintenant {target_user.status}.")
+    return redirect("user_detail", user_id=user_id)
+
+
+@require_permission("USER_CREATE")
+def user_add_role(request, user_id):
+    target_user = get_object_or_404(User, id=user_id)
+    role = get_object_or_404(Role, id=request.POST.get("role_id"))
+    UserRole.objects.get_or_create(user=target_user, role=role)
+    messages.success(request, f"Rôle {role.name} ajouté à {target_user.name}.")
+    return redirect("user_detail", user_id=user_id)
+
+
+@require_permission("USER_CREATE")
+def user_remove_role(request, user_id, role_id):
+    UserRole.objects.filter(user_id=user_id, role_id=role_id).delete()
+    messages.info(request, "Rôle retiré.")
+    return redirect("user_detail", user_id=user_id)
+
+
+@require_permission("USER_CREATE")
+def user_add_permission(request, user_id):
+    from accounts.models import Permission as PermissionModel, UserPermission
+    target_user = get_object_or_404(User, id=user_id)
+    permission = get_object_or_404(PermissionModel, id=request.POST.get("permission_id"))
+    UserPermission.objects.get_or_create(user=target_user, permission=permission)
+    messages.success(request, f"Permission {permission.code} accordée directement à {target_user.name}.")
+    return redirect("user_detail", user_id=user_id)
+
+
+@require_permission("USER_CREATE")
+def user_remove_permission(request, user_id, permission_id):
+    from accounts.models import UserPermission
+    UserPermission.objects.filter(user_id=user_id, permission_id=permission_id).delete()
+    messages.info(request, "Permission directe retirée.")
+    return redirect("user_detail", user_id=user_id)
 
 # ---- Customer: catalogue, reservations, favorites ----
 

@@ -1,0 +1,67 @@
+{% extends "webapp/base.html" %}
+{% block title %}{{ target_user.name }}{% endblock %}
+{% block content %}
+<h2 class="section-title">{{ target_user.name }}</h2>
+<div class="row g-3">
+  <div class="col-md-6">
+    <div class="card p-3">
+      <h5>Informations</h5>
+      <p class="mb-1"><strong>Nom d'utilisateur :</strong> {{ target_user.username }}</p>
+      <p class="mb-1"><strong>Téléphone :</strong> {{ target_user.phone }}</p>
+      <p class="mb-1"><strong>Boutique :</strong> {{ target_user.shop.name|default:"—" }}</p>
+      <p class="mb-3"><strong>Statut :</strong>
+        <span class="badge {% if target_user.status == 'ACTIVE' %}bg-success{% else %}bg-danger{% endif %}">{{ target_user.status }}</span>
+      </p>
+      <form method="post" action="{% url 'user_toggle_status' target_user.id %}">
+        {% csrf_token %}
+        <button class="btn btn-mtn-outline btn-sm">
+          {% if target_user.status == 'ACTIVE' %}Désactiver{% else %}Activer{% endif %} ce compte
+        </button>
+      </form>
+    </div>
+  </div>
+
+  <div class="col-md-6">
+    <div class="card p-3">
+      <h5>Rôles</h5>
+      {% for r in target_user.roles.all %}
+        <form method="post" action="{% url 'user_remove_role' target_user.id r.id %}" class="d-inline">
+          {% csrf_token %}
+          <span class="badge bg-secondary me-1 mb-1" style="font-size:0.9em;">
+            {{ r.name }} <button type="submit" class="btn-close btn-close-white btn-sm" style="font-size:0.6em;" title="Retirer"></button>
+          </span>
+        </form>
+      {% empty %}<p class="text-muted">Aucun rôle assigné.</p>{% endfor %}
+
+      <form method="post" action="{% url 'user_add_role' target_user.id %}" class="d-flex gap-2 mt-3">
+        {% csrf_token %}
+        <select name="role_id" class="form-select form-select-sm">
+          {% for r in all_roles %}<option value="{{ r.id }}">{{ r.name }}</option>{% endfor %}
+        </select>
+        <button class="btn btn-mtn btn-sm text-nowrap">Ajouter le rôle</button>
+      </form>
+    </div>
+
+    <div class="card p-3 mt-3">
+      <h5>Permissions directes <small class="text-muted">(en plus des rôles)</small></h5>
+      {% for p in target_user.direct_permissions.all %}
+        <form method="post" action="{% url 'user_remove_permission' target_user.id p.id %}" class="d-inline">
+          {% csrf_token %}
+          <span class="badge bg-dark me-1 mb-1" style="font-size:0.85em;">
+            {{ p.code }} <button type="submit" class="btn-close btn-close-white btn-sm" style="font-size:0.55em;" title="Retirer"></button>
+          </span>
+        </form>
+      {% empty %}<p class="text-muted">Aucune permission directe.</p>{% endfor %}
+
+      <form method="post" action="{% url 'user_add_permission' target_user.id %}" class="d-flex gap-2 mt-3">
+        {% csrf_token %}
+        <select name="permission_id" class="form-select form-select-sm">
+          {% for p in all_permissions %}<option value="{{ p.id }}">{{ p.code }}</option>{% endfor %}
+        </select>
+        <button class="btn btn-mtn-dark btn-sm text-nowrap">Accorder</button>
+      </form>
+    </div>
+  </div>
+</div>
+<a href="{% url 'user_list' %}" class="btn btn-mtn-outline mt-3">← Retour à la liste</a>
+{% endblock %}
